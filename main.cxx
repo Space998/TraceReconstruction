@@ -1,17 +1,29 @@
-#include <iostream>
-#include "Simulazione.h"
+
 #include "DataType.h"
+#include "WriteRead.h"
+#include "Rivelatore.h"
+#include "Simulazione.h"
+
+#include <iostream>
 #include <optional>
 #include <ctime>
 #include <chrono>
 #include <random>
+#include <fstream>
 
 int main(){
 	//std::cout << "Test" << std::endl;
-    Simulazione r(5);
-    r.SimulatePoint(0.7,1,0,0);
+    Rivelatore detector;
+    SimulatePoint(detector, 10, 0.7,1,0,0);
 
+    std::ifstream in("Simulazione.bin", std::ios::binary);
+    readFile(in);
 /*
+    fileHeader test(0xFF, int64_t(0xAABBCCDD11223344));
+    std::cout << std::hex << test.date1 << std::endl;
+    std::cout << std::hex << test.date2 << std::endl;
+    std::cout << std::hex << test.date() << std::endl;
+
     std::optional<int> x{};
 
     headerType test;

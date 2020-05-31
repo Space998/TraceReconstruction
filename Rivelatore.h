@@ -1,6 +1,5 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
-
 struct Rivelatore
 {
 	int m_plate = 3; 			//Numeber of plate of the detector

@@ -1,7 +1,11 @@
+Point to generaate
+10
 Take number
 42
+Type of simulatio
+Point simulation without limits
 Begin time
-Sun May 10 17:13:12 2020
+Mon Jun  1 00:27:00 2020
 y	x
 0.7	1
 m	q
@@ -10,7 +14,12 @@ m	q
 -0.0276998	0.7277
 -0.0328134	0.732813
 -0.0705491	0.770549
+0.167483	0.532517
+0.121592	0.578408
+-0.0227432	0.722743
+0.140742	0.559258
+0.0486767	0.651323
 Number of m and q generated
-5
+10
 End time
-Sun May 10 17:13:12 2020
+Mon Jun  1 00:27:00 2020
