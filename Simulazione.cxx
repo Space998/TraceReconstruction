@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <string>
+#include <vector>
 
 //Function for the evaluation of m and q end similar
 int mBorders(float y, float x, float (&array1)[2], float (&array2)[2]) 
@@ -17,45 +19,93 @@ int mBorders(float y, float x, float (&array1)[2], float (&array2)[2])
     if (m2_1 > m1_2 || m2_2 > m1_1)
     {
         std::cerr << "ERROR: Impossible to guarantee three hits" << std::endl;
-        return 1;
+        exit(1);
     }
     else if (m1_1 > m1_2 && m2_2 > m2_1)
     {
         array1[0] = m1_2;
         array2[0] = m2_2;
+        return 0;
     }
     else if (m1_1 > m1_2 && m2_1 > m2_2)
     {
         array1[0] = m1_2;
-        array2[0] = m2_1;            
+        array2[0] = m2_1;
+        return 0;            
     }
     else if (m1_2 > m1_1 && m2_2 > m2_1)
     {
         array1[0] = m2_2;
         array2[0] = m1_2;
+        return 0;
     }
+
+    return 0;
 }
 
 //Method of Simulate class
-int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise)
+int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise)
 {
     //std::cout << "Rivelazione di " << m_rivelatore.m_plate << " punti" << std::endl;
     //std::cout << x << y << std::endl;
 
-    float mq[2] = {0,0};        //{m,q}
+    float mq[2] = {0,0};        //{m,q} of the generated trace
 
     float mq1[2] = {0,0};       //{m1,q1}
     float mq2[2] = {0,0};       //{m2,q2}    
 
-    bool type = 0;
-    int point = 0;                                                  //Also the number of "data" (in the sense of detector takes) starts counting from 1
-    int take = 42;                                                  //Need to write program to determine take -- need to add control (no biger than 17 bit)
+    int point = 0;                                                  //Number of event generated, starts counting from 1
+    int take = 1;                                                   
 
-    auto file1 = "Simulazione.bin";                                 //Binary file to store all the data, "official file"
-    std::ofstream datafile(file1, std::ios::binary);    
+    std::string file2;   //File to contain data in binary form    
 
-    auto file2 = "Original.txt";                                    //File to contain the generated value of m and q for comparison
-    std::ofstream originaldatafile(file2);                 
+    //So che è un brutto nest di if, se riesco a trovare un modo migliore lo sostituirò, al momento non sono ancora riuscito a trovare un modo migliore per farlo
+    if (filename == "auto")         //Check if user defined a specific file for the output, if passed auto an automatic file is created in teh directory Simulation/
+    {
+        if(!std::filesystem::is_directory("Simulation/")) //Check if directory exist, if not creates it
+            std::filesystem::create_directory("./Simulation/");
+        int hm = howMany();         //Checks how many "Simulation*.bin" are alreaady in the directory
+        take += hm;
+        std::string take_str = std::to_string(take);       
+        filename = std::string("Simulation/Simulation_") + take_str + std::string(".bin");    //File to contain data in binary form
+        file2 = std::string("Simulation/Original_") + take_str + std::string(".txt");         
+        while (std::filesystem::exists(filename) || std::filesystem::exists(file2))     //If a SImulation"x".bin or Orginal"x".txt already exist checks recursively for x++
+        {
+            take++;
+            take_str = std::to_string(take);       
+            filename = std::string("Simulation/Simulation_") + take_str + std::string(".bin");
+            file2 = std::string("Simulation/Original_") + take_str + std::string(".txt");
+        }
+    }
+    else
+    {
+        std::vector<std::string> file = SplitFilename(filename);
+        file2 = file.at(0) + std::string("/") + std::string("Original_") + file.at(1) + std::string(".txt");    
+        if (std::filesystem::exists(filename) || std::filesystem::exists(file2))        //Checks if the file passed by the user alredy exists
+        {
+            std::cout << "File passed to the simulation or the Original_filename.txt alredy exists, overwrite? [y/n]" << std::endl;
+            std::string response;
+            std::cin >> response;
+            if (response == std::string("n"))
+            {
+                std::cerr << "Ok, terminating program" << std::endl;
+                exit(2);
+            }
+            else if (response != std::string("y"))
+            {
+                std::cerr << "Unexpeted user response" << std::endl;
+                exit(3);
+            } 
+        }
+        else if (!std::filesystem::is_directory(file.at(0)))
+        {
+            std::cerr << "Can't find the directory of the passed file " << std::endl;
+            exit(4);
+        }   
+    }
+    
+    std::ofstream datafile(filename, std::ios::binary);             //Opens binary file to store all the data, "official file"  
+    std::ofstream originaldatafile(file2);                          //Opens the file to store all the generated m and q values
 
 
     //Writing on terminal the conditin of the simulation
@@ -63,7 +113,7 @@ int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, 
     std::cout << "Take number: " << take << "\n";
     std::cout << "Point to simulate: " << num << "\n";
     std::cout << "Output of generated numbers: " << file2 << "\n";
-    std::cout << "Output of data: " << file1 << "\n";
+    std::cout << "Output of data: " << filename << "\n";
 
     auto instant1 = time();         //Determines the time when the simulation begins
     fileHeader head(0,take,int64_t(instant1));
@@ -82,7 +132,6 @@ int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, 
     
     write(datafile, head);  //Writing the header of the file for the simulation in the Simulation.bin file
 
-    //print_beginType(datafile, type, uint64_t(instant1), take);
     originaldatafile << "Point to generaate\n";
     originaldatafile << num << "\n";
     originaldatafile << "Take number\n";
@@ -118,11 +167,12 @@ int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, 
 
         for (int j = 0; j < 3; j++)
         {
-            yLine = mq[0]*(-j) + mq[1];
+            yLine = mq[0]*(-j) + mq[1];             //Calculate intersection between generated trace with x=0,1,2
             //std::cout << yLine << " : " << -j << std::endl;
-            if (!(yLine > 1 || yLine < 0)) 
-            {                      
-                values[j] = pixel(yLine);  
+            if (!(yLine > rivelatore.m_lenght || yLine < 0)) 
+            {          
+                //std::cout << yLine << " : " << pixel(rivelatore, yLine) << "\n";            
+                values[j] = pixel(rivelatore, yLine);           //Calculate the pixel that got hit
                 plate ++;
             }
         }
@@ -149,25 +199,18 @@ int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, 
     originaldatafile << instant2;
     
     //Writing on terminal the condition of the end of the simulation
-    if(num == point)
-    {
-        std::cout << "Number of point simulated: " << point << "\n";
-        std::cout << "Time needed for the simulation: " << instant2 - instant1 << "\n";
-        std::cout << "End of point simulation\n" << std::endl;
-    }
-    else
-    {
-        std::cerr << "The number of generated point is different from the number passed by the user";
-        std::cout << "Time needed for the simulation: " << instant2 - instant1 << "\n";
-        std::cout << "End of point simulation\n" << std::endl;
-        return 2;
-    }
+    std::cout << "Number of point simulated: " << point << "\n";
+    std::cout << "Time needed for the simulation: " << instant2 - instant1 << "\n";
+    std::cout << "End of point simulation\n" << std::endl;
 
     datafile.close();
     originaldatafile.close();
+    
+    return 0;
 }
 
-int SimulateLine(Rivelatore rivelatore, int num)
+int SimulateLine(std::string filename, Rivelatore rivelatore, int num)
 {
     std::cout << "Rivelazione di " << rivelatore.m_plate << " punti su linea" << std::endl;
+    return 0;
 }

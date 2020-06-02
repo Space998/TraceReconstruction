@@ -10,15 +10,25 @@
 #include <chrono>
 #include <random>
 #include <fstream>
+#include <string>
+#include <vector>
 
 int main(){
 	//std::cout << "Test" << std::endl;
     Rivelatore detector;
-    SimulatePoint(detector, 10, 0.7,1,0,0);
+    SimulatePoint("auto", detector, 10, 0.7,1,0,0);
 
-    std::ifstream in("Simulazione.bin", std::ios::binary);
-    readFile(in);
-/*
+    readFile("Simulation/Test.txt");      
+ 
+ /*
+    //std::cout << howMany("Simulation", "Simulation") << std::endl;
+    
+    std::string str1 ("/usr/bin/man");
+    std::string str2 ("c:\\windows\\winhelp.exe");
+
+    std::cout << SplitFilename(str1).at(0) << std::endl;
+    std::vector vec2 = SplitFilename (str2);
+
     fileHeader test(0xFF, int64_t(0xAABBCCDD11223344));
     std::cout << std::hex << test.date1 << std::endl;
     std::cout << std::hex << test.date2 << std::endl;

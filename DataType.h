@@ -77,7 +77,7 @@ static_assert(sizeof(dataType) == 3*4);
  
 //Defining a vector that contains all the data type 
 inline std::vector<std::string> dataStuct{"fileHeader", "fileEnd", "headerType", "dataType"};
-inline std::map<int, int> strctLenght{
+inline std::map<int, int> structLenght{
 	{0xF0CAFACE, sizeof(fileHeader)},
 	{0xF0CADEAD, sizeof(fileEnd)},
 	{0x4EADE500, sizeof(headerType)},

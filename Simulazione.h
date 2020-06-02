@@ -8,10 +8,10 @@
 
 //Utility functions
 inline
-int pixel(float value)	//From the value (intersection between line and datector plate) determines the pixel that was hit
+int pixel(Rivelatore &rivelatore, float value)	//From the value (intersection between line and datector plate) determines the pixel that was hit
 {
-    return value*1e6;
-};
+    return value/(rivelatore.m_dimension);
+}
 
 //Function for the evaluation of m and q end similar
 inline
@@ -40,11 +40,11 @@ auto time()
     return std::ctime(&end_time);
 }
 
-//Function that return the value of m1 and m2 between with the m of the random line needs to be generated in case of a measure with limits
+//Function that return the value of m1 and m2 between with the m of the random line needs to be generated in case of a measure with limits -> the process can be visulized in the the geogebra file
 int mBorders(float y, float x, float (&array1)[2], float (&array2)[2]);
 
 //Simulation functions
-int SimulatePoint(Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise);		//Function to simulate the generation of num traces, all generated from a single point 
-int SimulateLine(Rivelatore rivelatore, int num);
+int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise);		//Function to simulate the generation of num traces, all generated from a single point 
+int SimulateLine(std::string filename, Rivelatore rivelatore, int num);
 
 #endif
