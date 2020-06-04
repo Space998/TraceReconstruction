@@ -116,7 +116,8 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     std::cout << "Output of data: " << filename << "\n";
 
     auto instant1 = time();         //Determines the time when the simulation begins
-    fileHeader head(0,take,int64_t(instant1));
+    std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
+    fileHeader head(0,take,int64_t(reinterpret_cast<char*>(&instant1)));
 
     if (limit)
     {
@@ -147,7 +148,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
         originaldatafile << "without limits\n";
     }
     originaldatafile << "Begin time\n";
-    originaldatafile << instant1;
+    originaldatafile << instant1  << "\n";
     originaldatafile << "y\tx\n";
     originaldatafile << y << "\t" << x << "\n";
     originaldatafile << "m\tq\n";
@@ -158,7 +159,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
         int plate = 0;
         float yLine = 0;
-        std::map<int, int> values;
+        std::vector<dataType> values;
 
         mq[0] = RandomFloat(mq1[0],mq2[0]);
         mq[1] = y - mq[0]*x;
@@ -172,17 +173,22 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
             if (!(yLine > rivelatore.m_lenght || yLine < 0)) 
             {          
                 //std::cout << yLine << " : " << pixel(rivelatore, yLine) << "\n";            
-                values[j] = pixel(rivelatore, yLine);           //Calculate the pixel that got hit
+                values.push_back(dataType(duration(time1), j, pixel(rivelatore, yLine)));           //Calculate the pixel that got hit
                 plate ++;
             }
         }
 
         write(datafile, headerType(plate, point));
+        for(auto const& el: values) 
+        {
+            write(datafile, el);
+        }
+        /*
         for(auto const& [key, val] : values)  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
         {
             write(datafile, dataType(key,val));
         }
-        
+        */
     }
 
     if (noise)
@@ -190,17 +196,12 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
         std::cout << "Noise not impeltemted" << std::endl;
     }
 
-    auto instant2 = time();
-    write(datafile, fileEnd(int64_t(instant2)));
-
     originaldatafile << "Number of m and q generated\n";
     originaldatafile << point << "\n";
-    originaldatafile << "End time\n";
-    originaldatafile << instant2;
-    
+
     //Writing on terminal the condition of the end of the simulation
     std::cout << "Number of point simulated: " << point << "\n";
-    std::cout << "Time needed for the simulation: " << instant2 - instant1 << "\n";
+    std::cout << "Time needed for the simulation: " << duration(time1) << " ns\n";
     std::cout << "End of point simulation\n" << std::endl;
 
     datafile.close();

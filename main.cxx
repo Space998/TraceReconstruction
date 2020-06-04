@@ -17,9 +17,11 @@ int main(){
 	//std::cout << "Test" << std::endl;
     Rivelatore detector;
     SimulatePoint("auto", detector, 10, 0.7,1,0,0);
-
-    readFile("Simulation/Test.txt");      
+    readFile("auto");      
  
+    SimulatePoint("auto", detector, 10, 0.7,1,1,0);
+    readFile("auto");
+
  /*
     //std::cout << howMany("Simulation", "Simulation") << std::endl;
     

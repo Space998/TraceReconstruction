@@ -35,9 +35,21 @@ float RandomFloat(float min, float max)
 inline
 auto time()
 {
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    std::time_t t_c = std::chrono::system_clock::to_time_t(now - std::chrono::hours(24));
+    return std::put_time(std::localtime(&t_c), "%F %T");
+    /*
     auto data = std::chrono::system_clock::now();
     std::time_t end_time = std::chrono::system_clock::to_time_t(data);  
     return std::ctime(&end_time);
+    */
+}
+
+inline
+unsigned int duration(std::chrono::high_resolution_clock::time_point time1)
+{
+   std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
+   return std::chrono::duration_cast<std::chrono::nanoseconds>( time2 - time1 ).count();
 }
 
 //Function that return the value of m1 and m2 between with the m of the random line needs to be generated in case of a measure with limits -> the process can be visulized in the the geogebra file

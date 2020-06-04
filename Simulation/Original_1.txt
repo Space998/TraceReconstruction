@@ -5,7 +5,7 @@ Take number
 Type of simulatio
 Point simulation without limits
 Begin time
-Wed Jun  3 01:51:03 2020
+2020-06-03 22:07:49
 y	x
 0.7	1
 m	q
@@ -21,5 +21,3 @@ m	q
 0.0486767	0.651323
 Number of m and q generated
 10
-End time
-Wed Jun  3 01:51:03 2020

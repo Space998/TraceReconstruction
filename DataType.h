@@ -40,21 +40,6 @@ struct fileHeader		//Struct for the file header
 };
 static_assert(sizeof(fileHeader) == 6*4);
 
-struct fileEnd		//Struct for the file end
-{
-	unsigned int checkWord : 32;
-	int date1 : 32;		//the data value was divided into two parts to maintain 32 bits allignement in accordance with the rest of the program
-	int date2 : 32;
-
-	fileEnd(int64_t date) : checkWord{0xF0CADEAD}, date1{int(date >> 32)}, date2{int(date)} {}
-
-	int64_t date()		//Method to return the complite data value					
-	{
-		return (int64_t(date1) << 32) + date2;
-	}	
-};
-static_assert(sizeof(fileEnd) == 3*4);
-
 struct headerType		//Struct fot header of data			
 {
 	unsigned int checkWord : 32;
@@ -63,23 +48,24 @@ struct headerType		//Struct fot header of data
 
 	headerType(int d, int n) : checkWord{0x4EADE500}, dimension{d}, number{n} {}		//0x4EADE500 = HEADER00
 };
-static_assert(sizeof(fileEnd) == 3*4);
+static_assert(sizeof(headerType) == 3*4);
 
 struct dataType			//Struct for data
 {
 	unsigned int checkWord : 32;
+	int time : 32; 	//Time passed from the start of the simulation fin ns	
 	int plate : 32;				//Plate hitten -> counted from zero to two
 	int value : 32;				//Number of the pixel hit
+
 	
-	dataType(int p, int v = 0) : checkWord{0XDADADADA}, plate{p}, value{v} {}				//0XDADADADA = DATADATA
+	dataType(int t, int p, int v = 0) : checkWord{0XDADADADA}, time{t}, plate{p}, value{v} {}				//0XDADADADA = DATADATA
 };
-static_assert(sizeof(dataType) == 3*4);
+static_assert(sizeof(dataType) == 4*4);
  
 //Defining a vector that contains all the data type 
 inline std::vector<std::string> dataStuct{"fileHeader", "fileEnd", "headerType", "dataType"};
 inline std::map<int, int> structLenght{
 	{0xF0CAFACE, sizeof(fileHeader)},
-	{0xF0CADEAD, sizeof(fileEnd)},
 	{0x4EADE500, sizeof(headerType)},
 	{0XDADADADA, sizeof(dataType)}	
 };
