@@ -54,65 +54,18 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     float mq1[2] = {0,0};       //{m1,q1}
     float mq2[2] = {0,0};       //{m2,q2}    
 
-    int point = 0;                                                  //Number of event generated, starts counting from 1
-    int take = 1;                                                   
+    int point = 0;      //Number of event generated, starts counting from 1
+    std::string originalFile; //File to contain the original data genereted by the algorithm
+    int take = checkWriteFile(filename, originalFile);  
 
-    std::string file2;   //File to contain data in binary form    
-
-    //So che è un brutto nest di if, se riesco a trovare un modo migliore lo sostituirò, al momento non sono ancora riuscito a trovare un modo migliore per farlo
-    if (filename == "auto")         //Check if user defined a specific file for the output, if passed auto an automatic file is created in teh directory Simulation/
-    {
-        if(!std::filesystem::is_directory("Simulation/")) //Check if directory exist, if not creates it
-            std::filesystem::create_directory("./Simulation/");
-        int hm = howMany();         //Checks how many "Simulation*.bin" are alreaady in the directory
-        take += hm;
-        std::string take_str = std::to_string(take);       
-        filename = std::string("Simulation/Simulation_") + take_str + std::string(".bin");    //File to contain data in binary form
-        file2 = std::string("Simulation/Original_") + take_str + std::string(".txt");         
-        while (std::filesystem::exists(filename) || std::filesystem::exists(file2))     //If a SImulation"x".bin or Orginal"x".txt already exist checks recursively for x++
-        {
-            take++;
-            take_str = std::to_string(take);       
-            filename = std::string("Simulation/Simulation_") + take_str + std::string(".bin");
-            file2 = std::string("Simulation/Original_") + take_str + std::string(".txt");
-        }
-    }
-    else
-    {
-        std::vector<std::string> file = SplitFilename(filename);
-        file2 = file.at(0) + std::string("/") + std::string("Original_") + file.at(1) + std::string(".txt");    
-        if (std::filesystem::exists(filename) || std::filesystem::exists(file2))        //Checks if the file passed by the user alredy exists
-        {
-            std::cout << "File passed to the simulation or the Original_filename.txt alredy exists, overwrite? [y/n]" << std::endl;
-            std::string response;
-            std::cin >> response;
-            if (response == std::string("n"))
-            {
-                std::cerr << "Ok, terminating program" << std::endl;
-                exit(2);
-            }
-            else if (response != std::string("y"))
-            {
-                std::cerr << "Unexpeted user response" << std::endl;
-                exit(3);
-            } 
-        }
-        else if (!std::filesystem::is_directory(file.at(0)))
-        {
-            std::cerr << "Can't find the directory of the passed file " << std::endl;
-            exit(4);
-        }   
-    }
-    
     std::ofstream datafile(filename, std::ios::binary);             //Opens binary file to store all the data, "official file"  
-    std::ofstream originaldatafile(file2);                          //Opens the file to store all the generated m and q values
-
+    std::ofstream originaldatafile(originalFile);                          //Opens the file to store all the generated m and q values 
 
     //Writing on terminal the conditin of the simulation
     std::cout << "Starting point simulation\n";
-    std::cout << "Take number: " << take << "\n";
+    std::cout << "Take number: " << take << "\n";       //In case of user defined file the take number will always be one
     std::cout << "Point to simulate: " << num << "\n";
-    std::cout << "Output of generated numbers: " << file2 << "\n";
+    std::cout << "Output of generated numbers: " << originalFile << "\n";
     std::cout << "Output of data: " << filename << "\n";
 
     auto instant1 = time();         //Determines the time when the simulation begins
@@ -121,13 +74,13 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
     if (limit)
     {
-        mq1[0] = mLine(0,0,y,x);
-        mq2[0] = mLine(1,0,y,x);
+        mBorders(y,x,mq1,mq2);
         head.type = 0xBBBB0000;
     }
     else
     {
-        mBorders(y,x,mq1,mq2);
+        mq1[0] = mLine(0,0,y,x);
+        mq2[0] = mLine(1,0,y,x) ;  
         head.type = 0xAAAA0000;
     }
     
@@ -139,7 +92,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     originaldatafile << take << "\n";
     originaldatafile << "Type of simulatio\n";
     originaldatafile << "Point simulation ";
-    if (limit)
+    if (limit) 
     {
         originaldatafile << "with limits\n";
     }
@@ -193,7 +146,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
     if (noise)
     {
-        std::cout << "Noise not impeltemted" << std::endl;
+        std::cout << " -- Noise not implemented --" << std::endl;
     }
 
     originaldatafile << "Number of m and q generated\n";
@@ -210,8 +163,10 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     return 0;
 }
 
+/*
 int SimulateLine(std::string filename, Rivelatore rivelatore, int num)
 {
     std::cout << "Rivelazione di " << rivelatore.m_plate << " punti su linea" << std::endl;
     return 0;
 }
+*/

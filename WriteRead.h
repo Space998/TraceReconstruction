@@ -44,6 +44,14 @@ int howMany(std::string path = "Simulation", std::string name = "Simulation")
 
 
 //Library of functions to write and read over files.
+
+//Function to determine the name of the files
+//Determines the name for the file containing the original data
+//Checks for the existance of the name file passed by the user or determens the name for the new automatically generated file
+//Returns take number
+int checkWriteFile(std::string &filename, std::string &file2);
+
+//Function to write files
 template <typename T> 
 inline
 void write(std::ofstream &file, T data)
@@ -51,6 +59,10 @@ void write(std::ofstream &file, T data)
     file.write(reinterpret_cast<char*>(&data), sizeof(data));
 }
 
+//Function that checks the existance of the file passed by the user to be read for data and in case of automatic naming return the correct file name
+std::string existanceReadFile(std::string namefile);   
+
+//Function to read file
 void readFile(std::string namefile);
 
 #endif

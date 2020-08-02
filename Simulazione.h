@@ -56,7 +56,7 @@ unsigned int duration(std::chrono::high_resolution_clock::time_point time1)
 int mBorders(float y, float x, float (&array1)[2], float (&array2)[2]);
 
 //Simulation functions
-int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise);		//Function to simulate the generation of num traces, all generated from a single point 
-int SimulateLine(std::string filename, Rivelatore rivelatore, int num);
+int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit = true, const bool noise = false);		//Function to simulate the generation of num traces, all generated from a single point 
+//int SimulateLine(std::string filename, Rivelatore rivelatore, int num);
 
 #endif

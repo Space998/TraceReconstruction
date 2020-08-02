@@ -1,11 +1,11 @@
 Point to generaate
 50
 Take number
-2
+7
 Type of simulatio
-Point simulation with limits
+Point simulation without limits
 Begin time
-2020-08-01 09:22:00
+2020-08-01 10:22:43
 y	x
 0.7	1
 m	q

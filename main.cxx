@@ -16,10 +16,12 @@
 int main(){
 	//std::cout << "Test" << std::endl;
     Rivelatore detector;
+    /*
     SimulatePoint("auto", detector, 10, 0.7,1,0,0);
-    readFile("auto");      
+    readFile("auto");   
+    */   
  
-    SimulatePoint("auto", detector, 10, 0.7,1,1,0);
+    SimulatePoint("auto", detector, 10, 0.7,1, true, false);
     readFile("auto");
 
  /*

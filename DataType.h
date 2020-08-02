@@ -43,7 +43,7 @@ static_assert(sizeof(fileHeader) == 6*4);
 struct headerType		//Struct fot header of data			
 {
 	unsigned int checkWord : 32;
-	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to 3) -> starts counting from 1
+	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to 3) + noise -> starts counting from 1
 	int number : 32;				//Nuber of event -> start counting from 1			
 
 	headerType(int d, int n) : checkWord{0x4EADE500}, dimension{d}, number{n} {}		//0x4EADE500 = HEADER00
@@ -53,10 +53,9 @@ static_assert(sizeof(headerType) == 3*4);
 struct dataType			//Struct for data
 {
 	unsigned int checkWord : 32;
-	int time : 32; 	//Time passed from the start of the simulation fin ns	
+	int time : 32; 				//Time passed from the start of the simulation fin ns	
 	int plate : 32;				//Plate hitten -> counted from zero to two
 	int value : 32;				//Number of the pixel hit
-
 	
 	dataType(int t, int p, int v = 0) : checkWord{0XDADADADA}, time{t}, plate{p}, value{v} {}				//0XDADADADA = DATADATA
 };

@@ -1,0 +1,23 @@
+Point to generaate
+10
+Take number
+18
+Type of simulatio
+Point simulation without limits
+Begin time
+2020-08-01 12:58:59
+y	x
+0.7	1
+m	q
+-0.140188	0.840188
+0.305617	0.394383
+-0.0830992	0.783099
+-0.0984401	0.79844
+-0.211647	0.911647
+0.502449	0.197551
+0.364777	0.335223
+-0.0682296	0.76823
+0.422225	0.277775
+0.14603	0.55397
+Number of m and q generated
+10
