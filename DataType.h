@@ -43,7 +43,7 @@ static_assert(sizeof(fileHeader) == 6*4);
 struct headerType		//Struct fot header of data			
 {
 	unsigned int checkWord : 32;
-	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to 3) + noise -> starts counting from 1
+	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to number of plates of the detector) + noise -> starts counting from 1
 	int number : 32;				//Nuber of event -> start counting from 1			
 
 	headerType(int d, int n) : checkWord{0x4EADE500}, dimension{d}, number{n} {}		//0x4EADE500 = HEADER00

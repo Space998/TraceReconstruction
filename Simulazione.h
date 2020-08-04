@@ -5,6 +5,19 @@
 #include "Rivelatore.h"
 #include <ctime>
 #include <chrono>
+#include <random>
+
+//Random generators
+//Definition of the poisson random generator
+//The number of noise hit of a plate are calculated from a poisson distribution with mean value of 0.25
+int poisson();
+
+//Uniform random int generator
+int randomInt(const int &min, const int &max);
+
+//Uniform random float generator
+inline
+float randomFloat(const float &min, const float &max);
 
 //Utility functions
 inline
@@ -21,15 +34,9 @@ float mLine(const float y1, const float x1, const float y, const float x)
 }
 
 inline
-float qLine(const float y1, const float x1, const float y, const float x)
+float qLine(const float y, const float x, const float m)
 {
-    return y1 - x1 * (y - y1);
-}
-
-inline
-float RandomFloat(float min, float max) 
-{
-    return  (max - min) * ((((float) rand()) / (float) RAND_MAX)) + min ;
+    return y - (m * x);
 }
 
 inline
@@ -53,7 +60,7 @@ unsigned int duration(std::chrono::high_resolution_clock::time_point time1)
 }
 
 //Function that return the value of m1 and m2 between with the m of the random line needs to be generated in case of a measure with limits -> the process can be visulized in the the geogebra file
-int mBorders(float y, float x, float (&array1)[2], float (&array2)[2]);
+int mBorders(Rivelatore &rivelatore, float y, float x, float (&array1)[2], float (&array2)[2]);
 
 //Simulation functions
 int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit = true, const bool noise = false);		//Function to simulate the generation of num traces, all generated from a single point 

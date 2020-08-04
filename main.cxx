@@ -21,7 +21,7 @@ int main(){
     readFile("auto");   
     */   
  
-    SimulatePoint("auto", detector, 10, 0.7,1, true, false);
+    SimulatePoint("auto", detector, 10, 0.7,1, true, true);
     readFile("auto");
 
  /*
