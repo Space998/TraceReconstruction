@@ -9,8 +9,8 @@
 
 //Random generators
 //Definition of the poisson random generator
-//The number of noise hit of a plate are calculated from a poisson distribution with mean value of 0.25
-int poisson();
+//The number of noise hit of a plate are calculated from a poisson distribution with mean value of rivelatore.m_errorMean
+int poisson(Rivelatore &rivelatore);
 
 //Uniform random int generator
 int randomInt(const int &min, const int &max);

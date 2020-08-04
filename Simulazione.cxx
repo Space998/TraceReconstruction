@@ -12,9 +12,9 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 //Poisson
-std::poisson_distribution<int> pois(0.25);
-int poisson()
+int poisson(Rivelatore &rivelatore)
 {
+    std::poisson_distribution<int> pois(rivelatore.m_errorMean);
     return pois(gen);
 }
 
@@ -80,7 +80,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     float mq1[2] = {0,0};       //{m1,q1}   maximum and minumum  values of mq for the generation (in this way only track that intersect the detector are generated)
     float mq2[2] = {0,0};       //{m2,q2}    
 
-    int track = 0;              //Number of event generated, starts counting from 1
+    int track = 1;              //Number of event generated, starts counting from 1
     std::string originalFile;   //File to contain the original data genereted by the algorithm
     int take = checkWriteFile(filename, originalFile);  
 
@@ -162,7 +162,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
                 point++;
 
             if (noise)
-                point += poisson();
+                point += poisson(rivelatore);
 
             int real = randomInt(0,point);
             for (int n = 0; n < point; n++) //This was made to mix the real data between the noise, in this way all the noise points aren't generated after the real point makin that using the time stamp was possible to go back to the real point (first in the list from a temporal prospective)

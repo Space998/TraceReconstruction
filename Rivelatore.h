@@ -8,8 +8,9 @@ struct Rivelatore
 	int m_number;				//Number of pixels in a plate of the detector
 	float m_dimension;			//Dimension of the pixels of the detector in meters
 	float m_lenght;				//Lenght of the plate of the detector in meters
+	float m_errorMean;			//Mean for the poisson distribution to generate noise over the plates
 
-	Rivelatore(int num = 20000, float dim = 50e-6) : m_plate{3}, m_distance{1}, m_width{(m_plate -1) * m_distance}, m_number{num}, m_dimension{dim}, m_lenght{num*dim} {}
+	Rivelatore(int num = 20000, float dim = 50e-6) : m_plate{3}, m_distance{1}, m_width{(m_plate -1) * m_distance}, m_number{num}, m_dimension{dim}, m_lenght{num*dim}, m_errorMean{0.25} {}
 };
 
 //All distances are expressed in meters.
