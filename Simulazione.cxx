@@ -150,7 +150,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
         mq[1] = qLine(y,x,mq[0]);
         originaldatafile << mq[0] << "\t" << mq[1];
         //std::cout << "y = " << mq[0] << "x + " << mq[1] << std::endl;
-
+        
         for (int j = 0; j < rivelatore.m_plate; j++)
         {
             int point = 0;
@@ -158,9 +158,9 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
             yLine = mq[0]*(-(j*rivelatore.m_distance)) + mq[1];             //Calculate intersection between generated trace with x=0,1,2,.....
             //std::cout << yLine << " : " << -j << std::endl;
 
-            if (yLine < rivelatore.m_lenght && yLine > 0)        
+            if (yLine < rivelatore.m_lenght && yLine > 0)     
                 point++;
-
+                
             if (noise)
                 point += poisson(rivelatore);
 

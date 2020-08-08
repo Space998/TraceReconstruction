@@ -1,11 +1,14 @@
 #include "WriteRead.h"
 #include "DataType.h"
+#include "Rivelatore.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <filesystem>
 #include <typeinfo>
+#include <math.h>
+
 
 int checkWriteFile(std::string &filename, std::string &file2)
 {
@@ -101,12 +104,14 @@ std::string existanceReadFile(std::string namefile)
     
 }
 
-void readFile(std::string namefile)
+void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision)
 {
     namefile = existanceReadFile(namefile);
 
     std::vector<int> xValue;        //Vector to store all the x values of an event aka the affected pixel 
     std::vector<int> yValue;        //Vector to store all the y values of an event
+
+    float rmax = sqrt(pow(detector.m_width,2) + pow(detector.m_lenght,2)); //maximum value possible of r -> diagonal of the detector
 
     //std::cout << "File size: " << int(std::filesystem::file_size(namefile)) << std::endl;
     //int num = 0;

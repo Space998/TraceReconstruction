@@ -2,12 +2,14 @@
 #define WR_H
 
 #include "DataType.h"
+#include "Rivelatore.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <filesystem>
 #include <typeinfo>
+#include <math.h>
 
 //Subdivide a path sting into path - name - extention
 inline
@@ -63,6 +65,34 @@ void write(std::ofstream &file, T data)
 std::string existanceReadFile(std::string namefile);   
 
 //Function to read file
-void readFile(std::string namefile);
+void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision);
+//theta and rho precision indicates the dimension of a pixel in the (rho,theta) space for the discretization of the Hough space
+//theta precision is requested in degree -> the function will transform it in radiants
+//rho precision is in meters
+
+//Function for Hough trasformation
+inline 
+float yValue(Rivelatore &detector, const int y) //Returns the float value of the hit on y axis (set in the middle of the pixel)
+{
+    return (y*detector.m_dimension) + (detector.m_dimension/2);
+}
+
+inline
+float rho(const float y, const float x, const float theta)        //Cos function returns the cosine of an angle of x radians.
+{
+    return cos(theta)*x + sin(theta*y);
+}
+
+inline
+float degRad(const float deg)
+{
+    return (deg*M_PI)/180;
+}
+
+inline 
+float radDeg(const float rad)
+{
+    return (rad*180)/M_PI;
+}
 
 #endif

@@ -1,4 +1,3 @@
-
 #include "DataType.h"
 #include "WriteRead.h"
 #include "Rivelatore.h"
@@ -13,6 +12,7 @@
 #include <string>
 #include <vector>
 
+
 int main(){
 	//std::cout << "Test" << std::endl;
     Rivelatore detector;
@@ -22,7 +22,15 @@ int main(){
     */   
  
     SimulatePoint("auto", detector, 10, 0.7,1, true, true);
-    readFile("auto");
+    readFile("auto", detector,1,0.1);
+
+    std::cout << "--" << pixel(detector, 125e-6) << " , " << yValue(detector, pixel(detector, 125e-6)) << std::endl;
+    std::cout << "--" << pixel(detector, 140e-6) << " , " << yValue(detector, pixel(detector, 140e-6)) << std::endl;
+    std::cout << "--" << pixel(detector, 40e-6) << " , " << yValue(detector, pixel(detector, 40e-6)) << std::endl;
+    std::cout << "-" << "30 : " << degRad(30) << std::endl; 
+    std::cout << "-" << "500 : " << degRad(500) << std::endl;
+    std::cout << "-" << "1.8 : " << radDeg(1.8) << std::endl;
+    std::cout << "-" << "10 : " << radDeg(10) << std::endl;
 
  /*
     //std::cout << howMany("Simulation", "Simulation") << std::endl;
