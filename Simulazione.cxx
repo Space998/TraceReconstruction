@@ -80,7 +80,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     float mq1[2] = {0,0};       //{m1,q1}   maximum and minumum  values of mq for the generation (in this way only track that intersect the detector are generated)
     float mq2[2] = {0,0};       //{m2,q2}    
 
-    int track = 1;              //Number of event generated, starts counting from 1
+    int track = 0;              //Number of event generated, starts counting from 1
     std::string originalFile;   //File to contain the original data genereted by the algorithm
     int take = checkWriteFile(filename, originalFile);  
 
@@ -154,17 +154,20 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
         for (int j = 0; j < rivelatore.m_plate; j++)
         {
             int point = 0;
+            int real = 0;
 
             yLine = mq[0]*(-(j*rivelatore.m_distance)) + mq[1];             //Calculate intersection between generated trace with x=0,1,2,.....
             //std::cout << yLine << " : " << -j << std::endl;
 
             if (yLine < rivelatore.m_lenght && yLine > 0)     
                 point++;
-                
+ 
             if (noise)
+            {
                 point += poisson(rivelatore);
-
-            int real = randomInt(0,point);
+                real = randomInt(0,point-1);
+            }
+            
             for (int n = 0; n < point; n++) //This was made to mix the real data between the noise, in this way all the noise points aren't generated after the real point makin that using the time stamp was possible to go back to the real point (first in the list from a temporal prospective)
             {
                 if (n == real)
@@ -174,7 +177,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
                     int value = randomInt(0,rivelatore.m_number);
                     values.push_back(dataType(duration(time1), j, value));
                     originaldatafile << "\t( " << j << " , " << value << ")";
-                } 
+                }      
             }
 
             hit += point; 

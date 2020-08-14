@@ -1,3 +1,4 @@
 Save geometry of the detector in a file
 Noise generation -> study statistical distibution used -> make graph
-Algorithm for track reconstruction
+Algorithm for track reconstruction --
+Se c'è un solo punto non faccia il calcolo

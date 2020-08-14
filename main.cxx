@@ -21,12 +21,12 @@ int main(){
     readFile("auto");   
     */   
  
-    SimulatePoint("auto", detector, 10, 0.7,1, true, true);
-    readFile("auto", detector,1,0.1);
+    SimulatePoint("auto", detector, 1, 0.7,1, true, false);
+    readFile("auto", detector,0.005, 0.1);
 
-    std::cout << "--" << pixel(detector, 125e-6) << " , " << yValue(detector, pixel(detector, 125e-6)) << std::endl;
-    std::cout << "--" << pixel(detector, 140e-6) << " , " << yValue(detector, pixel(detector, 140e-6)) << std::endl;
-    std::cout << "--" << pixel(detector, 40e-6) << " , " << yValue(detector, pixel(detector, 40e-6)) << std::endl;
+    std::cout << "--" << pixel(detector, 125e-6) << " , " << yValueCor(detector, pixel(detector, 125e-6)) << std::endl;
+    std::cout << "--" << pixel(detector, 140e-6) << " , " << yValueCor(detector, pixel(detector, 140e-6)) << std::endl;
+    std::cout << "--" << pixel(detector, 40e-6) << " , " << yValueCor(detector, pixel(detector, 40e-6)) << std::endl;
     std::cout << "-" << "30 : " << degRad(30) << std::endl; 
     std::cout << "-" << "500 : " << degRad(500) << std::endl;
     std::cout << "-" << "1.8 : " << radDeg(1.8) << std::endl;
