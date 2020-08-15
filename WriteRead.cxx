@@ -10,6 +10,8 @@
 #include <typeinfo>
 #include <math.h>
 #include <iterator>
+#include "Hough.h"
+#include "HoughFunctions.h"
 
 //Inclusions for ROOT
 #include <TROOT.h>
@@ -118,7 +120,7 @@ std::string existanceReadFile(std::string namefile)
     
 }
 
-void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision)
+void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images)
 {
     //int argc = 0; 
     //char* argv[1];
@@ -132,114 +134,102 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
     std::vector<float> xValueFloat; //Vector to store all the x values
     std::vector<float> yValueFloat; //Vector to store all the y values
 
-    float rmax = sqrt(pow(detector.m_width,2) + pow(detector.m_lenght,2)); //maximum value possible of r -> diagonal of the detector
+    //float rmax = sqrt(pow(detector.m_width,2) + pow(detector.m_lenght,2)); //maximum value possible of r -> diagonal of the detector
 
     //std::cout << "File size: " << int(std::filesystem::file_size(namefile)) << std::endl;
     //int num = 0;
-    int imgNum = 0;
+
+    //Definid variable to read event characteristics
+    int eventCount;     
+    int eventNum;
+
+    //Defining variable relative to value read
+    int time;
+    int plate; 
+    int value;
+
+    //General variable for reading
+    unsigned int w;
+
     std::ifstream in(namefile, std::ios::binary);
     while(!in.eof())       //Temporary
     {
-        unsigned int w;
         in.read((char*) &w, 4);
         if (w == 0x4EADE500)
         {   
-            imgNum ++;
-
             //xValue.clear();
             //yValue.clear();
-            xValueFloat.clear();
-            yValueFloat.clear();
-            std::vector<std::map<int,int>> thetaValue(int(180/thetaPrecision)-1); //Vector to store the different values of rho associated with the same value of theta
-            int eventCount;     
-            int eventNum;
+            xValueFloat.clear();            //Creation of vector to store x values (correct values not descrete ones)
+            yValueFloat.clear();            //Creation of vector to store y values (correct values not descrete ones)
+            
+            //std::vector<std::map<int,int>> thetaValue(int(180/thetaPrecision)-1); //Vector to store the different values of rho associated with the same value of theta
+            /*
+            std::vector<std::vector<int>> rhovalueALL(int(180/thetaPrecision)-1);
+            std::vector<std::vector<int>> rhovalue;
+            std::vector<std::vector<int>> rhovalueOccurrency;
+            */
+
+            std::vector<std::vector<std::vector<int>>> values(int(180/thetaPrecision)-1); //The position in the first vector identifies the angle, the vector in the third inclusion are [values] and [repetition of this values]
+
             in.read((char*) &eventCount, 4);
             in.read((char*) &eventNum, 4);
-            std::cout << "Event number: " << eventNum << "\n";
-            std::cout << "Point number: " << eventCount << "\n";
-            for (int i = 0; i < eventCount; i++)
+            int i = 0;
+            int j = 0;
+            while (i < eventCount && j < 10) //Substantially if the program doen't find a new expected value goes on
             {
+                j++;
+
                 in.read((char*) &w, 4);
                 if (w == 0XDADADADA)
                 {
-                    int time;
-                    int plate; 
-                    int value;
                     in.read((char*) &time, 4);
                     in.read((char*) &plate, 4);
                     in.read((char*) &value, 4);
 
                     xValueFloat.push_back(xValueCor(detector,plate));
                     yValueFloat.push_back(yValueCor(detector,value));
+
+                    i++;
+                    j = 0;
                 }
             }
-            for (int i = 0; i < int(xValueFloat.size()); i++)
+            if (j == 10)
             {
-                std::cout << "( " << yValueFloat.at(i) << " , " << xValueFloat.at(i) << " ) \n";
-            }
+                std::cout << "Problem with event number: " << eventNum << ", found only " << i << " values of the expected " << eventCount << ".\n";
+                std::cout << "Would you like to continue the analysis? (y/n)\n";
+                
+                std::string response;
+                std::cin >> response;
+                if (response == std::string("n"))
+                {
+                    std::cerr << "Ok, terminating program" << std::endl;
+                    exit(5);
+                }
+                else if (response != std::string("y"))
+                {
+                    std::cerr << "Unexpeted user response" << std::endl;
+                    exit(3);
+                } 
+            }   
 
             //Errors vector
             std::vector<float> yErr;
             yErr.resize(xValueFloat.size());
-            std::fill(yErr.begin(), yErr.end(), detector.m_dimension/sqrt(12));        
+            std::fill(yErr.begin(), yErr.end(), detector.m_dimension/sqrt(12));     
 
-            // Creazione dello screen
-            TCanvas *c1 = new TCanvas("c1","",0,0,800,600); 
+            //VecToTrust(xValueFloat);
 
-            //Crea grafico con barre di errore
-            TGraphErrors *gr = new TGraphErrors(xValueFloat.size(), &(xValueFloat[0]) , &(yValueFloat[0]), 0, &(yErr[0]));
-            gr->SetMarkerStyle(20);					// Seleziona il marker rotondo
-            gr->SetMarkerSize(1);
-            gr->SetTitle("Detector hit");					// Titolo del grafico
+            //rhoAll(yValueFloat,xValueFloat,thetaValue,thetaPrecision,rhoPrecision);         
 
-            //Creo asse X
-            TAxis *xaxis = gr->GetXaxis();
-            xaxis->SetRangeUser(0,-detector.m_width);
-            xaxis->SetTitle("x (m)");				//Titole asse X
-            xaxis->CenterTitle();
+            std::vector<int> max = {0,0,0,0};
 
-            //Creo asse y
-            TAxis *yaxis = gr->GetYaxis();
-            yaxis->SetRangeUser(0,detector.m_lenght);
-            yaxis->SetTitle("y (m)");				//Titolo asse Y
-            yaxis->CenterTitle();          
-
-            gr->Draw("APE");					// Plot del grafico
-
-            //Drawing lines to indicate detector plate
-            std::vector<TLine> lines;
-            //Determining the lines
-            for (int l=0; l < detector.m_plate; l++)
-            {
-                lines.push_back(TLine(-l*detector.m_distance,0,-l*detector.m_distance,detector.m_lenght));
-            }
-
-            //Drawing the lines
-            for (int l=0; l < detector.m_plate; l++)
-            {
-                lines.at(l).SetLineColor(kRed);
-                lines.at(l).Draw();
-            }
-
-            //Output immagine
-            TImage *img = TImage::Create();
-            img->FromPad(c1);
-            std::string imOut = std::string("Img") + std::to_string(imgNum) + std::string(".png");
-            std::cout << imOut << std::endl;
-            img->WriteImage(imOut.c_str());
-            //delete gr;
-            //delete img;
-            //delete c1;
-            c1->Clear();
-
-            rhoAll(yValueFloat,xValueFloat,thetaValue,thetaPrecision,rhoPrecision);
-            std::vector<int> max = {0,0,0};
+            /*
             for (int i = 0; i < int(thetaValue.size()); i++)
             {
                 for(auto const& [key, val] : thetaValue.at(i))  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
                 {
                     //std::cout << key*rhoPrecision << std::endl; 
-                    if (val > max.at(2) && val < rmax)
+                    if (val > max.at(2) && key < rmax)
                     {
                         max.at(0) = i;
                         max.at(1) = key;
@@ -259,57 +249,33 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                     }    
                 }
             }
-            //std::cout << "-- " << maxRho << " , " << maxRho*rhoPrecision << std::endl;
-            
-            // Creazione dello screen
-            //TCanvas *c2 = new TCanvas("c2","",0,0,800,600); 
-            TH2F *histo = new TH2F("Histo","Hough space",int(180/thetaPrecision)-1,thetaPrecision,180-thetaPrecision,2*maxRho,-maxRho*rhoPrecision,maxRho*rhoPrecision);
-            histo->GetXaxis()->SetTitle("Theta (degree)");
-            histo->GetXaxis()->CenterTitle();
-            histo->GetYaxis()->SetTitle("Rho (m)");
-            histo->GetYaxis()->CenterTitle();
-
-            for (int i = 0; i < int(thetaValue.size()); i++)
-            {
-                for(auto const& [key, val] : thetaValue.at(i))  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
-                {
-                    histo->Fill((float(i+1))*thetaPrecision,key*rhoPrecision);
-                }
-                
-            }
-
-            gStyle->SetPalette(kBird);
-            gStyle->SetOptStat(0);
-            histo->Draw("COLZ");
-
-            //Output immagine
-            img->FromPad(c1);
-            imOut = std::string("Img") + std::to_string(imgNum) + std::string("Histo.png");
-            std::cout << imOut << std::endl;
-            img->WriteImage(imOut.c_str());
-            /*
-            TImage *img1 = TImage::Create();
-            img1->FromPad(c2);
-            std::string imOut1 = std::string("Img") + std::to_string(imgNum) + std::string("Histo.png");
-            std::cout << imOut1 << std::endl;
-            img1->WriteImage(imOut1.c_str());
             */
-            delete histo;
-            //delete img1;
-            //delete c2;
-            c1->Clear();
 
-            std::cout << "Angle: " << (float(max.at(0)+1))*thetaPrecision << "\n";
-            std::cout << "Rho: " << max.at(1)*rhoPrecision << "\n";
-            std::cout << "Significance: " << max.at(2) << std::endl;
-            if (max.at(2) != 1)
+            calculateRho(values, max, yValueFloat, xValueFloat, thetaPrecision, rhoPrecision, detector.m_lenght, true);
+            int maxRho = max.at(3);
+            
+            //std::cout << "-- " << maxRho << " , " << maxRho*rhoPrecision << std::endl;
+            if (terminalOutput)
             {
-                std::cout << "m: " << mReconstructed(max.at(0), thetaPrecision) << " q: " << qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision) << "\n";
-            }
-            else
-            {
-                std::cout << "Impossible to calculate line equation\n";
-            }
+                std::cout << "Event number: " << eventNum << "\n";
+                std::cout << "Point number: " << eventCount << "\n";
+                for (int i = 0; i < int(xValueFloat.size()); i++)
+                {
+                    std::cout << "( " << yValueFloat.at(i) << " , " << xValueFloat.at(i) << " ) \n";
+                }
+
+                std::cout << "Angle: " << (float(max.at(0)+1))*thetaPrecision << "\n";
+                std::cout << "Rho: " << max.at(1)*rhoPrecision << "\n";
+                std::cout << "Significance: " << max.at(2) << std::endl;
+                if (max.at(2) != 1)
+                {
+                    std::cout << "m: " << mReconstructed(max.at(0), thetaPrecision) << " q: " << qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision) << "\n";
+                }
+                else
+                {
+                    std::cout << "Impossible to calculate line equation\n";
+                }
+            }   
             /*
             std::cout << "0x" << std::hex << w << " : " << std::dec << structLenght[w]/4 << std::endl;
             //num += structLenght[w];
@@ -317,83 +283,101 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
             std::cout << w << "\n";
             */
             
-            //Draw point graph with fit
-            gr->Draw("APE");					// Plot del grafico
-            
-            //Drawing lines to indicate detector plate
-            TLine line(0,qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision),-detector.m_width,(mReconstructed(max.at(0), thetaPrecision)*-detector.m_width)+qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision));
-            line.Draw();
-            //Drawing the lines of the plates
-            for (int l=0; l < int(lines.size()); l++)
+            if (images)
             {
-                lines.at(l).SetLineColor(kRed);
-                lines.at(l).Draw();
+                // Creazione dello screen
+                TCanvas *c1 = new TCanvas("c1","",0,0,800,600); 
+
+                //Crea grafico con barre di errore
+                TGraphErrors *gr = new TGraphErrors(xValueFloat.size(), &(xValueFloat[0]) , &(yValueFloat[0]), 0, &(yErr[0]));
+                gr->SetMarkerStyle(20);					// Seleziona il marker rotondo
+                gr->SetMarkerSize(1);
+                gr->SetTitle("Detector hit");					// Titolo del grafico
+
+                //Creo asse X
+                TAxis *xaxis = gr->GetXaxis();
+                xaxis->SetRangeUser(0,-detector.m_width);
+                xaxis->SetTitle("x (m)");				//Titole asse X
+                xaxis->CenterTitle();
+
+                //Creo asse y
+                TAxis *yaxis = gr->GetYaxis();
+                yaxis->SetRangeUser(0,detector.m_lenght);
+                yaxis->SetTitle("y (m)");				//Titolo asse Y
+                yaxis->CenterTitle();          
+
+                gr->Draw("APE");					// Plot del grafico
+
+                //Drawing lines to indicate detector plate
+                std::vector<TLine> lines;
+                //Determining the lines
+                for (int l=0; l < detector.m_plate; l++)
+                {
+                    lines.push_back(TLine(-l*detector.m_distance,0,-l*detector.m_distance,detector.m_lenght));
+                }
+
+                //Drawing the lines
+                for (int l=0; l < detector.m_plate; l++)
+                {
+                    lines.at(l).SetLineColor(kRed);
+                    lines.at(l).Draw();
+                }
+
+                //Output immagine
+                TImage *img = TImage::Create();
+                img->FromPad(c1);
+                std::string imOut = std::string("Img") + std::to_string(eventNum) + std::string(".png");
+                std::cout << imOut << std::endl;
+                img->WriteImage(imOut.c_str());
+                
+                //Drawing the fit line
+                TLine line(0,qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision),-detector.m_width,(mReconstructed(max.at(0), thetaPrecision)*-detector.m_width)+qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision));
+                line.Draw();
+
+                //Output immagine con fit
+                img->FromPad(c1);
+                imOut = std::string("Img") + std::to_string(eventNum) + std::string("Fit.png");
+                std::cout << imOut << std::endl;
+                img->WriteImage(imOut.c_str());
+                delete gr;
+                c1->Clear();
+
+                // Creazione dello histo 
+                TH2F *histo = new TH2F("Histo","Hough space",int(180/thetaPrecision)-1,thetaPrecision,180-thetaPrecision,2*maxRho,-maxRho*rhoPrecision,maxRho*rhoPrecision);
+                histo->GetXaxis()->SetTitle("Theta (degree)");
+                histo->GetXaxis()->CenterTitle();
+                histo->GetYaxis()->SetTitle("Rho (m)");
+                histo->GetYaxis()->CenterTitle();
+
+                for (int i = 0; i < int(values.size()); i++)
+                {
+                    for (int j = 0; j < int(values.at(i).at(0).size()); j++)
+                    {
+                        for (int n = 0; n < values.at(i).at(1).at(j); n++)
+                            histo->Fill((float(i+1))*thetaPrecision,values.at(i).at(0).at(j)*rhoPrecision);
+                    }
+                    /*
+                    for(auto const& [key, val] : values.at(i))  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
+                    {
+                        for (int p = 0; p < val; p++)
+                            histo->Fill((float(i+1))*thetaPrecision,key*rhoPrecision);
+                    }
+                    */
+                }
+
+                gStyle->SetPalette(kBird);
+                gStyle->SetOptStat(0);
+                histo->Draw("COLZ");
+
+                //Output immagine histo
+                img->FromPad(c1);
+                imOut = std::string("Img") + std::to_string(eventNum) + std::string("Histo.png");
+                std::cout << imOut << std::endl;
+                img->WriteImage(imOut.c_str());
+
+                delete histo;
+                delete c1;
             }
-
-            //Output immagine
-            //TImage *img2 = TImage::Create();
-            img->FromPad(c1);
-            imOut = std::string("Img") + std::to_string(imgNum) + std::string("Fit.png");
-            std::cout << imOut << std::endl;
-            img->WriteImage(imOut.c_str());
-            /*
-            std::string imOut2 = std::string("Img") + std::to_string(imgNum) + std::string("Fit.png");
-            std::cout << imOut2 << std::endl;
-            img->WriteImage(imOut2.c_str());
-            */
-            delete gr;
-            //delete img2;
-            delete c1;
-
-            /*
-            // Creazione dello screen
-            TCanvas *c3 = new TCanvas("c3","",0,0,800,600); 
-
-            //Crea grafico con barre di errore
-            TGraphErrors *gr1 = new TGraphErrors(xValueFloat.size(), &(xValueFloat[0]) , &(yValueFloat[0]), 0, &(yErr[0]));
-            gr1->SetMarkerStyle(20);					// Seleziona il marker rotondo
-            gr1->SetMarkerSize(1);
-            gr1->SetTitle("Detector hit with line fit");					// Titolo del grafico
-            
-            //Creo asse X
-            TAxis *xaxis1 = gr1->GetXaxis();
-            xaxis1->SetRangeUser(0,-detector.m_width);
-            xaxis1->SetTitle("x (m)");				//Titole asse X
-            xaxis1->CenterTitle();
-
-            //Creo asse y
-            TAxis *yaxis1 = gr1->GetYaxis();
-            yaxis1->SetRangeUser(0,detector.m_lenght);
-            yaxis1->SetTitle("y (m)");				//Titolo asse Y
-            yaxis1->CenterTitle();
-
-            gr1->Draw("APE");					// Plot del grafico
-
-            //Drawing lines to indicate detector plate
-            lines.clear();
-            //Determining the lines
-            for (int l=0; l < detector.m_plate; l++)
-            {
-                lines.push_back(TLine(-l*detector.m_distance,0,-l*detector.m_distance,detector.m_lenght));
-            }
-            lines.push_back(TLine(0,qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision),-detector.m_width,(mReconstructed(max.at(0), thetaPrecision)*-detector.m_width)+qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision)));
-            //Drawing the lines
-            for (int l=0; l < detector.m_plate+1; l++)
-            {
-                lines.at(l).SetLineColor(kRed);
-                lines.at(l).Draw();
-            }
-
-            //Output immagine
-            TImage *img2 = TImage::Create();
-            img2->FromPad(c3);
-            std::string imOut2 = std::string("Img") + std::to_string(imgNum) + std::string("Fit.png");
-            std::cout << imOut2 << std::endl;
-            img2->WriteImage(imOut2.c_str());
-            delete gr1;
-            delete img2;
-            delete c3;
-            */
         }
         /*
         else if (structLenght.contains(w))

@@ -2,6 +2,7 @@
 #include "WriteRead.h"
 #include "Rivelatore.h"
 #include "Simulazione.h"
+#include "HoughFunctions.h"
 
 #include <iostream>
 #include <optional>
@@ -12,7 +13,6 @@
 #include <string>
 #include <vector>
 
-
 int main(){
 	//std::cout << "Test" << std::endl;
     Rivelatore detector;
@@ -21,8 +21,8 @@ int main(){
     readFile("auto");   
     */   
  
-    SimulatePoint("auto", detector, 1, 0.7,1, true, false);
-    readFile("auto", detector,0.005, 0.1);
+    SimulatePoint("auto", detector, 1, 0.7,1, true, true);
+    readFile("auto", detector,0.005, 0.1, true, true);
 
     std::cout << "--" << pixel(detector, 125e-6) << " , " << yValueCor(detector, pixel(detector, 125e-6)) << std::endl;
     std::cout << "--" << pixel(detector, 140e-6) << " , " << yValueCor(detector, pixel(detector, 140e-6)) << std::endl;

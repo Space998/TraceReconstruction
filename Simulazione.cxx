@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "Hough.h"
 
 //Random generators
 std::random_device rd;

@@ -12,6 +12,7 @@ LIB=`root-config --libs | sed -e 's/-lPhysics//; s/-lPostscript//;  s/-lRIO//'`
 INC=`root-config --incdir`
 echo g++ -I$INC $@ $LIB
 
-g++-10 -std=c++17 -lstdc++fs -Wall -Wextra -Wpedantic -O2 -I$INC $@ $LIB
+#nvcc -O2 -I$INC $@ $LIB
+g++-10 -std=c++17 -lstdc++fs -Wall -Wextra -Wpedantic -O2 -I$INC $@ $LIB -L/usr/local/cuda-10.2/lib64 -lcuda -lcudart
 
 
