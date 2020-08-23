@@ -21,9 +21,11 @@ int main(){
     readFile("auto");   
     */   
  
-    SimulatePoint("auto", detector, 1, 0.7,1, true, true);
-    readFile("auto", detector,0.005, 0.1, true, true);
+    SimulatePoint("auto", detector, 12, 0.7,1, true, true);
+    readFile("auto", 0.005, 0.1, true, true);
+    //readFile("auto", detector, 0.005, 0.1, true, true);
 
+/*
     std::cout << "--" << pixel(detector, 125e-6) << " , " << yValueCor(detector, pixel(detector, 125e-6)) << std::endl;
     std::cout << "--" << pixel(detector, 140e-6) << " , " << yValueCor(detector, pixel(detector, 140e-6)) << std::endl;
     std::cout << "--" << pixel(detector, 40e-6) << " , " << yValueCor(detector, pixel(detector, 40e-6)) << std::endl;
@@ -32,7 +34,6 @@ int main(){
     std::cout << "-" << "1.8 : " << radDeg(1.8) << std::endl;
     std::cout << "-" << "10 : " << radDeg(10) << std::endl;
 
- /*
     //std::cout << howMany("Simulation", "Simulation") << std::endl;
     
     std::string str1 ("/usr/bin/man");

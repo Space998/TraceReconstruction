@@ -35,7 +35,7 @@ float randomFloat(const float &min, const float &max)
 }
 
 //Function for the evaluation of m and q end similar
-int mBorders(Rivelatore &rivelatore, float y, float x, float (&array1)[2], float (&array2)[2]) 
+int mBorders(Rivelatore &rivelatore, float y, float x, float &m1, float &m2) 
 {
     float m1_1 = mLine(0,0,y,x);
     float m1_2 = mLine(0,-rivelatore.m_width,y,x);
@@ -50,20 +50,20 @@ int mBorders(Rivelatore &rivelatore, float y, float x, float (&array1)[2], float
     }
     else if (m1_1 > m1_2 && m2_2 > m2_1)
     {
-        array1[0] = m1_2;
-        array2[0] = m2_2;
+        m1 = m1_2;
+        m2 = m2_2;
         return 0;
     }
     else if (m1_1 > m1_2 && m2_1 > m2_2)
     {
-        array1[0] = m1_2;
-        array2[0] = m2_1;
+        m1 = m1_2;
+        m2 = m2_1;
         return 0;            
     }
     else if (m1_2 > m1_1 && m2_2 > m2_1)
     {
-        array1[0] = m2_2;
-        array2[0] = m1_2;
+        m1 = m2_2;
+        m2 = m1_2;
         return 0;
     }
 
@@ -78,8 +78,8 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
     float mq[2] = {0,0};        //{m,q} of the generated trace
 
-    float mq1[2] = {0,0};       //{m1,q1}   maximum and minumum  values of mq for the generation (in this way only track that intersect the detector are generated)
-    float mq2[2] = {0,0};       //{m2,q2}    
+    float m1 = 0;       //{m1}   maximum and minumum  values of mq for the generation (in this way only track that intersect the detector are generated)
+    float m2 = 0;       //{m2}    
 
     int track = 0;              //Number of event generated, starts counting from 1
     std::string originalFile;   //File to contain the original data genereted by the algorithm
@@ -97,21 +97,20 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
     auto instant1 = time();         //Determines the time when the simulation begins
     std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
-    fileHeader head(0,take,int64_t(reinterpret_cast<char*>(&instant1)));
 
     if (limit)
     {
-        mBorders(rivelatore,y,x,mq1,mq2);
-        head.type = 0xBBBB0000;
+        mBorders(rivelatore,y,x,m1,m2);
+        //head.type = 0xBBBB0000;
     }
     else
     {
-        mq1[0] = mLine(0,0,y,x);
-        mq2[0] = mLine(rivelatore.m_lenght,0,y,x) ;  
-        head.type = 0xAAAA0000;
+        m1 = mLine(0,0,y,x);
+        m2 = mLine(rivelatore.m_lenght,0,y,x);  
+        //head.type = 0xAAAA0000;
     }
     
-    write(datafile, head);  //Writing the header of the file for the simulation in the Simulation.bin file
+    write(datafile, fileHeader(rivelatore, take, int64_t(reinterpret_cast<char*>(&instant1))));  //Writing the header of the file for the simulation in the Simulation.bin file
 
     originaldatafile << "Point to generaate\n";
     originaldatafile << num << "\n";
@@ -141,35 +140,60 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     originaldatafile << y << "\t" << x << "\n";
     originaldatafile << "m\tq\tNoise points\n";
 
+    //int hit = 0;
+    float yLine = 0;
+    std::vector<dataType> values;
+    std::vector<int> temp;
+    std::vector<float> yvalue;
+
+    //int point = 0;
+    int real = 0;
+
     for (int i = 0; i < num; i++)
     {    
-        int hit = 0;
-        float yLine = 0;
-        std::vector<dataType> values;
+        //hit = 0;
+        real = 0;
+        values.clear();
+        yvalue.clear();
+        temp.clear();
 
-        mq[0] = randomFloat(mq1[0],mq2[0]);
+        mq[0] = randomFloat(m1,m2);
         mq[1] = qLine(y,x,mq[0]);
+
         originaldatafile << mq[0] << "\t" << mq[1];
         //std::cout << "y = " << mq[0] << "x + " << mq[1] << std::endl;
         
         for (int j = 0; j < rivelatore.m_plate; j++)
         {
-            int point = 0;
-            int real = 0;
-
             yLine = mq[0]*(-(j*rivelatore.m_distance)) + mq[1];             //Calculate intersection between generated trace with x=0,1,2,.....
+            if (yLine < rivelatore.m_lenght && yLine > 0)
+            {
+                yvalue.push_back(yLine);
+                temp.push_back(rivelatore.m_plate);
+            }
+
+            if(noise)
+            {
+                for (int n = 0; n < poisson(rivelatore); n++)
+                    temp.push_back(j);
+            }
             //std::cout << yLine << " : " << -j << std::endl;
 
-            if (yLine < rivelatore.m_lenght && yLine > 0)     
-                point++;
- 
+
+/*
+            point = 0;
+            real = 0;
+
             if (noise)
-            {
                 point += poisson(rivelatore);
+             
+            if (yLine < rivelatore.m_lenght && yLine > 0)     
+            {
+                point++;
                 real = randomInt(0,point-1);
             }
-            
-            for (int n = 0; n < point; n++) //This was made to mix the real data between the noise, in this way all the noise points aren't generated after the real point makin that using the time stamp was possible to go back to the real point (first in the list from a temporal prospective)
+
+            for (int n = 0; n <= point; n++) //This was made to mix the real data between the noise, in this way all the noise points aren't generated after the real point makin that using the time stamp was possible to go back to the real point (first in the list from a temporal prospective)
             {
                 if (n == real)
                     values.push_back(dataType(duration(time1), j, pixel(rivelatore, yLine)));
@@ -180,9 +204,8 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
                     originaldatafile << "\t( " << j << " , " << value << ")";
                 }      
             }
-
             hit += point; 
-
+*/
             /*
             if (yLine < rivelatore.m_lenght && yLine > 0) 
             {          
@@ -201,13 +224,35 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
             }
             */
         }
-        originaldatafile << "\n";
         
+        std::random_shuffle(temp.begin(), temp.end());
+        for (int n = 0; n < int(temp.size()); n++)
+        {
+            if(temp.at(n) == rivelatore.m_plate)
+            {
+                values.push_back(dataType(duration(time1), real, pixel(rivelatore, yvalue.at(real))));
+                real++; 
+            }
+            else
+            {
+                int value = randomInt(0,rivelatore.m_number);
+                values.push_back(dataType(duration(time1), temp.at(n), value));
+                originaldatafile << "\t( " << temp.at(n) << " , " << value << ")";   
+            }
+            
+        }
+        originaldatafile << "\n";
+
+        writeData(datafile, headerType(track, int(temp.size())), values);
+
+        /*
         write(datafile, headerType(hit, track));
         for(auto const& el: values) 
         {
             write(datafile, el);
         }
+        */
+
         /*
         for(auto const& [key, val] : values)  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
         {

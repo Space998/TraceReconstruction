@@ -76,16 +76,18 @@ int checkWriteFile(std::string &filename, std::string &file2)
 
 std::string existanceReadFile(std::string namefile)
 {
-    if(!std::filesystem::is_directory("Simulation/")) //Check if directory exist
+    if(!std::filesystem::is_directory("Simulation/") || std::filesystem::is_empty("Simulation/")) //Check if directory exist or if it is empty
     {
         std::cerr << "No file found to read, make a simulation or check the file name" << std::endl;
         exit(4);
     }
+    /*
     if(std::filesystem::is_empty("Simulation/"))     //Check if directory is empty
     {
         std::cerr << "No file found to read, make a simulation or check the file name" << std::endl;
         exit(4);
     }
+    */
     if(namefile == "auto")     //If passed "auto" reads the last Simulation-"x".bin created
     {
         int count = 0;
@@ -120,7 +122,7 @@ std::string existanceReadFile(std::string namefile)
     
 }
 
-void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images)
+void readFile(std::string namefile, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images)
 {
     //int argc = 0; 
     //char* argv[1];
@@ -139,8 +141,12 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
     //std::cout << "File size: " << int(std::filesystem::file_size(namefile)) << std::endl;
     //int num = 0;
 
+    //Definid variable to read take characteristics
+    Rivelatore detector;
+    int take;
+
     //Definid variable to read event characteristics
-    int eventCount;     
+    int pointNum;     
     int eventNum;
 
     //Defining variable relative to value read
@@ -151,11 +157,58 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
     //General variable for reading
     unsigned int w;
 
+    //Vector to store events succefully reconstructed
+    std::vector<struct outDataType> mqValues;
+
+    //Defining string to store directory name of where to save images from ROOT
+    std::string imgDirectory = "none";
+    
+    std::cout << "Starting data analysis\n";
+    std::cout << "Analysing file: " << namefile << "\n";
+    
     std::ifstream in(namefile, std::ios::binary);
     while(!in.eof())       //Temporary
     {
         in.read((char*) &w, 4);
-        if (w == 0x4EADE500)
+        if (w == 0xF0CAFACE)
+        {
+            in.read(reinterpret_cast<char *>(&detector), sizeof(Rivelatore));
+
+            std::cout << "Using detector: " << std::hex << detector.name << "\n";
+            std::cout << "\t Plate number: " << detector.m_plate << "\n";
+            std::cout << "\t Plate distance: " << detector.m_distance << " m\n";
+            std::cout << "\t Pixel number per plate: " << detector.m_number << "\n";
+            std::cout << "\t Pixel dimension: " << detector.m_dimension << " m\n\n";
+            //std::cout << std::hex << riv.name << " , " << riv.m_plate << std::endl;
+
+            in.read((char*) &take, 4);
+
+            //Creates directory to store the images
+            if(images)
+            {
+                imgDirectory = SplitFilename(namefile).at(0) + std::string("/images_") + std::to_string(take);
+                if(std::filesystem::is_directory(imgDirectory) && !std::filesystem::is_empty("Simulation/") ) //Check if directory where the image should be saved exists
+                {
+                    std::cout << "Problem with the directory to store images relative to take: " << take << ", it already exists and it is not empty.\n";
+                    std::cout << "Would you like to continue and overwrite the files? (y/n)\n";
+                    
+                    std::string response;
+                    std::cin >> response;
+                    if (response == std::string("n"))
+                    {
+                        std::cerr << "Ok, terminating program" << std::endl;
+                        exit(5);
+                    }
+                    else if (response != std::string("y"))
+                    {
+                        std::cerr << "Unexpeted user response" << std::endl;
+                        exit(3);
+                    }    
+                }
+                std::filesystem::create_directory(imgDirectory);
+            }
+        }
+        else if (w == 0x4EADE500)
         {   
             //xValue.clear();
             //yValue.clear();
@@ -171,11 +224,11 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
 
             std::vector<std::vector<std::vector<int>>> values(int(180/thetaPrecision)-1); //The position in the first vector identifies the angle, the vector in the third inclusion are [values] and [repetition of this values]
 
-            in.read((char*) &eventCount, 4);
             in.read((char*) &eventNum, 4);
+            in.read((char*) &pointNum, 4);
             int i = 0;
             int j = 0;
-            while (i < eventCount && j < 10) //Substantially if the program doen't find a new expected value goes on
+            while (i < pointNum && j < 10) //Substantially if the program doen't find a new expected value goes on
             {
                 j++;
 
@@ -195,7 +248,7 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
             }
             if (j == 10)
             {
-                std::cout << "Problem with event number: " << eventNum << ", found only " << i << " values of the expected " << eventCount << ".\n";
+                std::cout << "Problem with event number: " << eventNum << ", found only " << i << " values of the expected " << pointNum << ".\n";
                 std::cout << "Would you like to continue the analysis? (y/n)\n";
                 
                 std::string response;
@@ -211,12 +264,6 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                     exit(3);
                 } 
             }   
-
-            //Errors vector
-            std::vector<float> yErr;
-            yErr.resize(xValueFloat.size());
-            std::fill(yErr.begin(), yErr.end(), detector.m_dimension/sqrt(12));     
-
             //VecToTrust(xValueFloat);
 
             //rhoAll(yValueFloat,xValueFloat,thetaValue,thetaPrecision,rhoPrecision);         
@@ -246,7 +293,21 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                     if (abs(key) > maxRho)
                     {
                         maxRho = abs(key);
-                    }    
+                  std::cout << "Problem with event number: " << eventNum << ", found only " << i << " values of the expected " << pointNum << ".\n";
+                std::cout << "Would you like to continue the analysis? (y/n)\n";
+                
+                std::string response;
+                std::cin >> response;
+                if (response == std::string("n"))
+                {
+                    std::cerr << "Ok, terminating program" << std::endl;
+                    exit(5);
+                }
+                else if (response != std::string("y"))
+                {
+                    std::cerr << "Unexpeted user response" << std::endl;
+                    exit(3);
+                }  }    
                 }
             }
             */
@@ -254,27 +315,42 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
             calculateRho(values, max, yValueFloat, xValueFloat, thetaPrecision, rhoPrecision, detector.m_lenght, true);
             int maxRho = max.at(3);
             
+            bool fit;
+            if (max.at(2) == 1)
+            {
+                fit = false;
+            }
+            else
+            {
+                fit = true;
+                mqValues.push_back(outDataType(eventNum, mReconstructed(max.at(0), thetaPrecision),qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision)));
+            }
+            
+            
             //std::cout << "-- " << maxRho << " , " << maxRho*rhoPrecision << std::endl;
             if (terminalOutput)
             {
                 std::cout << "Event number: " << eventNum << "\n";
-                std::cout << "Point number: " << eventCount << "\n";
+                std::cout << "Point number: " << pointNum << "\n";
                 for (int i = 0; i < int(xValueFloat.size()); i++)
                 {
                     std::cout << "( " << yValueFloat.at(i) << " , " << xValueFloat.at(i) << " ) \n";
                 }
 
-                std::cout << "Angle: " << (float(max.at(0)+1))*thetaPrecision << "\n";
-                std::cout << "Rho: " << max.at(1)*rhoPrecision << "\n";
+                //std::cout << "Angle: " << (float(max.at(0)+1))*thetaPrecision << "\n";
+                //std::cout << "Rho: " << max.at(1)*rhoPrecision << "\n";
                 std::cout << "Significance: " << max.at(2) << std::endl;
                 if (max.at(2) != 1)
                 {
-                    std::cout << "m: " << mReconstructed(max.at(0), thetaPrecision) << " q: " << qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision) << "\n";
+                    std::cout << "m: " << mReconstructed(max.at(0), thetaPrecision) 
+                                << " q: " << qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision) 
+                                << " ( Angle: " << (float(max.at(0)+1))*thetaPrecision << " , Rho: " << max.at(1)*rhoPrecision << " )\n";
                 }
                 else
                 {
                     std::cout << "Impossible to calculate line equation\n";
                 }
+                std::cout << "\n";
             }   
             /*
             std::cout << "0x" << std::hex << w << " : " << std::dec << structLenght[w]/4 << std::endl;
@@ -285,6 +361,11 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
             
             if (images)
             {
+                //Error vector
+                std::vector<float> yErr;
+                yErr.resize(xValueFloat.size());
+                std::fill(yErr.begin(), yErr.end(), detector.m_dimension/sqrt(12));     
+
                 // Creazione dello screen
                 TCanvas *c1 = new TCanvas("c1","",0,0,800,600); 
 
@@ -294,9 +375,12 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                 gr->SetMarkerSize(1);
                 gr->SetTitle("Detector hit");					// Titolo del grafico
 
+                gr->Draw("APE");					// Plot del grafico
+
                 //Creo asse X
                 TAxis *xaxis = gr->GetXaxis();
-                xaxis->SetRangeUser(0,-detector.m_width);
+                xaxis->SetLimits(-detector.m_width-0.2,0);
+                //xaxis->SetRangeUser(0,-detector.m_width);
                 xaxis->SetTitle("x (m)");				//Titole asse X
                 xaxis->CenterTitle();
 
@@ -304,9 +388,12 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                 TAxis *yaxis = gr->GetYaxis();
                 yaxis->SetRangeUser(0,detector.m_lenght);
                 yaxis->SetTitle("y (m)");				//Titolo asse Y
-                yaxis->CenterTitle();          
+                yaxis->CenterTitle();    
 
-                gr->Draw("APE");					// Plot del grafico
+
+                //gr->Draw("APE");					// Plot del grafico
+                //c1->Modified();
+                //c1->Update();
 
                 //Drawing lines to indicate detector plate
                 std::vector<TLine> lines;
@@ -326,19 +413,23 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
                 //Output immagine
                 TImage *img = TImage::Create();
                 img->FromPad(c1);
-                std::string imOut = std::string("Img") + std::to_string(eventNum) + std::string(".png");
-                std::cout << imOut << std::endl;
+                std::string imOut = imgDirectory + std::string("/Img") + std::to_string(eventNum) + std::string(".png");
+                //std::cout << imOut << std::endl;
                 img->WriteImage(imOut.c_str());
                 
-                //Drawing the fit line
-                TLine line(0,qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision),-detector.m_width,(mReconstructed(max.at(0), thetaPrecision)*-detector.m_width)+qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision));
-                line.Draw();
+                if (fit)
+                {
+                    //Drawing the fit line
+                    TLine line(0,qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision),-detector.m_width,(mReconstructed(max.at(0), thetaPrecision)*-detector.m_width)+qReconstructed(max.at(0), max.at(1), thetaPrecision, rhoPrecision));
+                    line.Draw();
 
-                //Output immagine con fit
-                img->FromPad(c1);
-                imOut = std::string("Img") + std::to_string(eventNum) + std::string("Fit.png");
-                std::cout << imOut << std::endl;
-                img->WriteImage(imOut.c_str());
+                    //Output immagine con fit
+                    img->FromPad(c1);
+                    imOut = imgDirectory + std::string("/Img") + std::to_string(eventNum) + std::string("Fit.png");
+                    //std::cout << imOut << std::endl;
+                    img->WriteImage(imOut.c_str());
+                }
+                
                 delete gr;
                 c1->Clear();
 
@@ -371,8 +462,8 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
 
                 //Output immagine histo
                 img->FromPad(c1);
-                imOut = std::string("Img") + std::to_string(eventNum) + std::string("Histo.png");
-                std::cout << imOut << std::endl;
+                imOut = imgDirectory + std::string("/Img") + std::to_string(eventNum) + std::string("Histo.png");
+                //std::cout << imOut << std::endl;
                 img->WriteImage(imOut.c_str());
 
                 delete histo;
@@ -387,6 +478,14 @@ void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecisi
         }
         */
     }
+    std::cout << "Number of events analysed: " << std::dec << eventNum + 1 << "\n";
+    std::cout << "Number of events succesfully reconstructed: " << mqValues.size() << "\n";
+    std::cout << "Output of analysed data: " << "\n";
+    if(images)
+        std::cout << "Output of images: " << imgDirectory << "\n";
+    std::cout << "End data analysis\n";
+
+
     //myApp.Run();  // Passaggio del controllo a root
     //std::cout << num << std::endl;
 }

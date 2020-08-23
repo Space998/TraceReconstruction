@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include "Rivelatore.h"
 
 /*
 type:	0xAAAA0000 - For point generation without limit
@@ -22,6 +23,7 @@ number: Number of intersection beetween a ray and the detector. COUNTED FROM 1
 point: 	Number of intersection beetween a ray and the three plates of the detector. COUNTED FROM 1
 */
 
+/*
 struct fileHeader		//Struct for the file header
 {
 	unsigned int checkWord : 32;
@@ -39,14 +41,33 @@ struct fileHeader		//Struct for the file header
 	}
 };
 static_assert(sizeof(fileHeader) == 6*4);
+*/
+
+struct fileHeader		//Struct for the file header
+{
+	unsigned int checkWord : 32;
+	Rivelatore detector;		//Detector used
+	int take : 32;
+	int date1 : 32;		//the data value was divided into two parts to maintain 32 bits allignement in accordance with the rest of the program
+	int date2 : 32;
+
+	fileHeader(Rivelatore det, int t, int64_t date) : checkWord{0xF0CAFACE}, detector{det}, take{t}, date1{int(date >> 32)}, date2{int(date)} {}
+
+	int64_t date()		//Method to return the complite data value					
+	{
+		return (int64_t(date1) << 32) + date2;
+	}
+};
+static_assert(sizeof(fileHeader) == 12*4);
+
 
 struct headerType		//Struct fot header of data			
 {
 	unsigned int checkWord : 32;
-	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to number of plates of the detector) + noise -> starts counting from 1
 	int number : 32;				//Nuber of event -> start counting from 1			
+	int dimension : 32;				//dimension of the event, number of value taken during this event (from 1 to number of plates of the detector) + noise -> starts counting from 1
 
-	headerType(int d, int n) : checkWord{0x4EADE500}, dimension{d}, number{n} {}		//0x4EADE500 = HEADER00
+	headerType(int n, int d) : checkWord{0x4EADE500}, number{n}, dimension{d} {}		//0x4EADE500 = HEADER00
 };
 static_assert(sizeof(headerType) == 3*4);
 
@@ -57,10 +78,33 @@ struct dataType			//Struct for data
 	int plate : 32;				//Plate hitten -> counted from zero to two
 	int value : 32;				//Number of the pixel hit
 	
-	dataType(int t, int p, int v = 0) : checkWord{0XDADADADA}, time{t}, plate{p}, value{v} {}				//0XDADADADA = DATADATA
+	dataType(int t, int p, int v = 0) : checkWord{0xDADADADA}, time{t}, plate{p}, value{v} {}				//0xDADADADA = DATADATA
 };
 static_assert(sizeof(dataType) == 4*4);
  
+struct outHeaderType
+{
+	unsigned int checkWord : 32;
+	int num : 32; 					//Number of events analysed
+	int found : 32;					//Number of track reconstructed -> doesn't cout the case with significance 1
+
+	outHeaderType(int n, int f) : checkWord{0x0074EADE}, num{n}, found{f} {} //0x0074EADE  = 0xOUTHEADE
+};
+static_assert(sizeof(outHeaderType) == 3*4);
+
+struct outDataType
+{
+	unsigned int checkWord : 32;
+	int eventNum : 32;
+	float mValue;
+	float qValue;
+
+	outDataType(int n, float m, float q) : checkWord{0x007DADAD}, eventNum{n}, mValue{m}, qValue{q} {} //0x007DADAD = 0xOUTDATAD
+};
+static_assert(sizeof(outDataType) == 4*4);
+
+
+/* 
 //Defining a vector that contains all the data type 
 inline std::vector<std::string> dataStuct{"fileHeader", "fileEnd", "headerType", "dataType"};
 inline std::map<int, int> structLenght{
@@ -68,5 +112,6 @@ inline std::map<int, int> structLenght{
 	{0x4EADE500, sizeof(headerType)},
 	{0XDADADADA, sizeof(dataType)}	
 };
+*/
 
 #endif

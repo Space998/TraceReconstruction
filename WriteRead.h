@@ -62,11 +62,22 @@ void write(std::ofstream &file, T data)
     file.write(reinterpret_cast<char*>(&data), sizeof(data));
 }
 
+template <typename H, typename T> 
+inline
+void writeData(std::ofstream &datafile, H header , std::vector<T> &values)
+{
+    write(datafile, header);
+    for(auto const& el: values) 
+    {
+        write(datafile, el);
+    }
+}
+
 //Function that checks the existance of the file passed by the user to be read for data and in case of automatic naming return the correct file name
 std::string existanceReadFile(std::string namefile);   
 
 //Function to read file
-void readFile(std::string namefile, Rivelatore &detector, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images);
+void readFile(std::string namefile, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images);
 //theta and rho precision indicates the dimension of a pixel in the (rho,theta) space for the discretization of the Hough space
 //theta precision is requested in degree -> the function will transform it in radiants
 //rho precision is in meters

@@ -88,6 +88,8 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
   thrust::device_vector<int> histogram_values;
   thrust::device_vector<int> histogram_counts;
 
+  float angle = 0;
+
   for (int i = 0; i < int(values.size()); i++)
   {
     //std::cout << i+1 << std::endl;
@@ -97,8 +99,10 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
     thrust::fill(cosValue.begin(), cosValue.end(), cos(((i+1)*thetaPrecision*M_PI)/180));
     */
 
+    angle = ((i+1)*thetaPrecision*M_PI)/180;
+
     //Calculation of cos(theta)*x
-    thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(((i+1)*thetaPrecision*M_PI)/180)));
+    thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angle)));
     //thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), cosValue.begin(), xTemp.begin(), thrust::multiplies<float>());
 
     /*
@@ -108,7 +112,7 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
     */
 
     //Calculation of sin(theta)*y
-    thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), yTemp.begin(), floatMultiplication(sin(((i+1)*thetaPrecision*M_PI)/180)));
+    thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), yTemp.begin(), floatMultiplication(sin(angle)));
     //thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), sinValue.begin(), yTemp.begin(), thrust::multiplies<float>());
 
     //Calulate sum

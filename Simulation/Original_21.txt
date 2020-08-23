@@ -1,0 +1,23 @@
+Point to generaate
+10
+Take number
+21
+Type of simulation
+Point simulation without limits and noise
+Begin time
+2020-08-20 20:59:55
+y	x
+0.7	1
+m	q	Noise points
+0.671501	0.0284994
+0.388265	0.311735
+0.42914	0.27086
+0.670454	0.0295455
+0.635877	0.0641226	( 0 , 14004)	( 0 , 1244)
+0.146321	0.553679	( 0 , 12505)
+-0.180947	0.880947
+0.389611	0.310389
+0.0827785	0.617222	( 0 , 14904)
+0.448542	0.251458
+Number of m and q generated
+10
