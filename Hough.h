@@ -11,6 +11,7 @@
 #include <thrust/adjacent_difference.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/transform_reduce.h>
 
 #include <iostream>
 #include <iomanip>
@@ -38,6 +39,19 @@ struct floatMultiplication
         float operator()(const float& x) const 
         { 
             return a * x;
+        }
+};
+
+struct floatMultiplicationSum
+{
+    const float a;
+
+    floatMultiplicationSum(float _a) : a(_a) {}
+
+    __host__ __device__
+        float operator()(const float& x) const 
+        { 
+            return (a * x) + a;
         }
 };
 

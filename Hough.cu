@@ -11,6 +11,9 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/transform.h>
 
+//Cuda cores: 384
+
+
 void VecToTrust(std::vector<float> &v)
 {
   std::cout << "--Mucca" << std::endl;
@@ -23,8 +26,8 @@ template <typename Vector1,
           typename Vector2,
           typename Vector3>
 void sparse_histogram(Vector1& data,
-                            Vector2& histogram_values,
-                            Vector3& histogram_counts)
+                      Vector2& histogram_values,
+                      Vector3& histogram_counts)
 {
   typedef typename Vector1::value_type ValueType; // input value type
   typedef typename Vector3::value_type IndexType; // histogram index type
@@ -88,6 +91,11 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
   thrust::device_vector<int> histogram_values;
   thrust::device_vector<int> histogram_counts;
 
+  //Angle vector
+  //thrust::device_vector<float> angleVec(int(180/thetaPrecision)-1);
+  //thrust::sequence(angleVec.begin(), angleVec.end());
+  //thrust::transform(angleVec.begin(), angleVec.end(), angleVec.begin(), floatMultiplicationSum(thetaPrecision));
+
   float angle = 0;
 
   for (int i = 0; i < int(values.size()); i++)
@@ -103,6 +111,8 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
 
     //Calculation of cos(theta)*x
     thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angle)));
+    //thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angle.begin())));
+    
     //thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), cosValue.begin(), xTemp.begin(), thrust::multiplies<float>());
 
     /*

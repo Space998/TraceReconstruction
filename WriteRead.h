@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <typeinfo>
-#include <math.h>
+#include <cmath>
 
 //Subdivide a path sting into path - name - extention
 inline
@@ -54,6 +54,10 @@ int howMany(std::string path = "Simulation", std::string name = "Simulation")
 //Returns take number
 int checkWriteFile(std::string &filename, std::string &file2);
 
+//Function that checks the existance of the file passed by the user to be read for data and in case of automatic naming return the correct file name
+std::string existanceFile(std::string namefile, std::string type);   //Function to determine the the existance of file namefile 
+//std::string existanceReadFile(std::string namefile);   
+
 //Function to write files
 template <typename T> 
 inline
@@ -73,11 +77,11 @@ void writeData(std::ofstream &datafile, H header , std::vector<T> &values)
     }
 }
 
-//Function that checks the existance of the file passed by the user to be read for data and in case of automatic naming return the correct file name
-std::string existanceReadFile(std::string namefile);   
+void checkCorrectness(std::string original, std::string analysis, std::vector<int64_t> times, const bool interactiveImg); //The last bool is used to determine if the function was called inside the read file function
+//void checkCorrectness(std::vector<float> &difference, std::vector<int> &count, std::vector<float> &value);
 
 //Function to read file
-void readFile(std::string namefile, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images);
+void readFile(std::string namefile, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images, const bool interactiveImg, const bool check);
 //theta and rho precision indicates the dimension of a pixel in the (rho,theta) space for the discretization of the Hough space
 //theta precision is requested in degree -> the function will transform it in radiants
 //rho precision is in meters

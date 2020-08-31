@@ -19,6 +19,15 @@ int abs(const int x)    //calculates absolute value of a float
 }
 
 inline
+float absFloat(const float x)    //calculates absolute value of a float
+{
+    if(x > 0)
+        return x;
+    else
+        return -x;    
+}
+
+inline
 float degRad(const float deg) //Transforms degree in radiant
 {
     return (deg*M_PI)/180;
@@ -113,12 +122,14 @@ void rhoOccurrency(std::vector<std::vector<int>> &rhovalueALL, std::vector<std::
 }
 */
 
+/*
 inline
 void maxMap(std::map<int,int> &x)
 {
     std::map<int,int>::iterator best = std::max_element(x.begin(),x.end(),[] (const std::pair<char,int>& a, const std::pair<char,int>& b)->bool{ return a.second < b.second; } );
     std::cout << best->first << " , " << best->second << "\n";
 }
+*/
 
 inline
 float mReconstructed(const int theta, const float thetaPrecision)
@@ -130,6 +141,15 @@ inline
 float qReconstructed(const int theta, const int rho, const float thetaPrecision, const float rhoPrecision)
 {
     return (rho*rhoPrecision)/sin(degRad((float(theta+1))*thetaPrecision));
+}
+
+inline 
+float mean(std::vector<int64_t> &vec)
+{
+    int64_t sum = 0;
+    for(int i = 0; i < int(vec.size()); i++)
+        sum += vec.at(i);
+    return float(sum)/float(vec.size());
 }
 
 #endif

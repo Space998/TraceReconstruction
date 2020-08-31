@@ -1,0 +1,17 @@
+Original data file
+Take number
+156
+Point to generate
+3
+Type of simulation
+Point simulation with limits and noise
+Begin time
+2020-08-30 22:44:03
+y	x
+0.7	1
+m	q	Noise points
+-0.0443421	0.744342	( 0 , 9785)
+0.0190159	0.680984
+0.0927152	0.607285	( 1 , 4099)
+Number of m and q generated
+3

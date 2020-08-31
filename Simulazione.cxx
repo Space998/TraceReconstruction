@@ -73,8 +73,6 @@ int mBorders(Rivelatore &rivelatore, float y, float x, float &m1, float &m2)
 //Method of Simulate class
 int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit, const bool noise)
 {
-    //std::cout << "Rivelazione di " << m_rivelatore.m_plate << " punti" << std::endl;
-    //std::cout << x << y << std::endl;
 
     float mq[2] = {0,0};        //{m,q} of the generated trace
 
@@ -112,10 +110,11 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     
     write(datafile, fileHeader(rivelatore, take, int64_t(reinterpret_cast<char*>(&instant1))));  //Writing the header of the file for the simulation in the Simulation.bin file
 
-    originaldatafile << "Point to generaate\n";
-    originaldatafile << num << "\n";
+    originaldatafile << "Original data file\n";
     originaldatafile << "Take number\n";
     originaldatafile << take << "\n";
+    originaldatafile << "Point to generate\n";
+    originaldatafile << num << "\n";
     originaldatafile << "Type of simulation\n";
     originaldatafile << "Point simulation ";
     if (limit) 
@@ -132,7 +131,7 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     }
     else
     {
-        originaldatafile << " without noise\n";
+        originaldatafile << " and without noise\n";
     }
     originaldatafile << "Begin time\n";
     originaldatafile << instant1  << "\n";
@@ -140,18 +139,14 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     originaldatafile << y << "\t" << x << "\n";
     originaldatafile << "m\tq\tNoise points\n";
 
-    //int hit = 0;
-    float yLine = 0;
-    std::vector<dataType> values;
-    std::vector<int> temp;
-    std::vector<float> yvalue;
-
-    //int point = 0;
-    int real = 0;
+    float yLine = 0;        //y value of hit
+    std::vector<dataType> values;   //vector to store all the data
+    std::vector<int> temp;          //Temporary vector to deterim date - noise order
+    std::vector<float> yvalue;      //vector to store all yLine
+    int real = 0;                   //int to take into account number of real data obtained
 
     for (int i = 0; i < num; i++)
     {    
-        //hit = 0;
         real = 0;
         values.clear();
         yvalue.clear();
@@ -177,54 +172,8 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
                 for (int n = 0; n < poisson(rivelatore); n++)
                     temp.push_back(j);
             }
-            //std::cout << yLine << " : " << -j << std::endl;
-
-
-/*
-            point = 0;
-            real = 0;
-
-            if (noise)
-                point += poisson(rivelatore);
-             
-            if (yLine < rivelatore.m_lenght && yLine > 0)     
-            {
-                point++;
-                real = randomInt(0,point-1);
-            }
-
-            for (int n = 0; n <= point; n++) //This was made to mix the real data between the noise, in this way all the noise points aren't generated after the real point makin that using the time stamp was possible to go back to the real point (first in the list from a temporal prospective)
-            {
-                if (n == real)
-                    values.push_back(dataType(duration(time1), j, pixel(rivelatore, yLine)));
-                else
-                {
-                    int value = randomInt(0,rivelatore.m_number);
-                    values.push_back(dataType(duration(time1), j, value));
-                    originaldatafile << "\t( " << j << " , " << value << ")";
-                }      
-            }
-            hit += point; 
-*/
-            /*
-            if (yLine < rivelatore.m_lenght && yLine > 0) 
-            {          
-                //std::cout << yLine << " : " << pixel(rivelatore, yLine) << "\n";            
-                values.push_back(dataType(duration(time1), j, pixel(rivelatore, yLine)));           //Calculate the pixel that got hit
-                hit ++;
-            }
-            if(noise)
-            {
-                for (int n = 0; n < poisson(); n++)
-                {
-                    //std::cout << "noise" << std::endl;
-                    values.push_back(dataType(duration(time1), j, randomInt(0,rivelatore.m_number)));       //Value of the noise is the generated with a uniform distribution over the plate lenght
-                    hit++;
-                }
-            }
-            */
         }
-        
+
         std::random_shuffle(temp.begin(), temp.end());
         for (int n = 0; n < int(temp.size()); n++)
         {
@@ -245,21 +194,6 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
 
         writeData(datafile, headerType(track, int(temp.size())), values);
 
-        /*
-        write(datafile, headerType(hit, track));
-        for(auto const& el: values) 
-        {
-            write(datafile, el);
-        }
-        */
-
-        /*
-        for(auto const& [key, val] : values)  //Cicles over the elements of the map to print the values detected with the corresponding detector plate
-        {
-            write(datafile, dataType(key,val));
-        }
-        */
-
         track ++;
     }
     originaldatafile << "Number of m and q generated\n";
@@ -276,10 +210,3 @@ int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const fl
     return 0;
 }
 
-/*
-int SimulateLine(std::string filename, Rivelatore rivelatore, int num)
-{
-    std::cout << "Rivelazione di " << rivelatore.m_plate << " punti su linea" << std::endl;
-    return 0;
-}
-*/

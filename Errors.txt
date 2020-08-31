@@ -2,4 +2,5 @@
 2: Passed file already exists
 3: Unexpeted user response
 4: File not found
-5: Error reading date
+5: Error reading data
+6: Passed incorrect file type

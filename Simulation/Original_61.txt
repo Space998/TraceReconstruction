@@ -1,23 +1,15 @@
-Point to generaate
-10
+Original data file
 Take number
 61
+Point to generate
+1
 Type of simulation
-Point simulation without limits and noise
+Point simulation with limits and noise
 Begin time
-2020-08-22 00:18:46
+2020-08-29 01:43:09
 y	x
 0.7	1
 m	q	Noise points
-0.159874	0.540126	( 2 , 16490)	( 1 , 7498)
-0.497438	0.202562	( 0 , 17416)
-0.141778	0.558222	( 2 , 18120)	( 1 , 10244)
--0.248771	0.948771
--0.112422	0.812422	( 2 , 10422)
-0.418643	0.281357
--0.299218	0.999218	( 2 , 7842)	( 1 , 15185)
-0.0105053	0.689495	( 1 , 10731)	( 0 , 18732)
--0.119474	0.819474	( 0 , 1361)	( 0 , 16900)
--0.226432	0.926432	( 2 , 13515)	( 0 , 13708)
+0.036173	0.663827	( 2 , 4511)	( 1 , 13118)
 Number of m and q generated
-10
+1

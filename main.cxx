@@ -21,10 +21,12 @@ int main(){
     readFile("auto");   
     */   
  
-    SimulatePoint("auto", detector, 12, 0.7,1, true, true);
-    readFile("auto", 0.005, 0.1, true, true);
+    SimulatePoint("auto", detector, 3, 0.7,1, true, true);
+    readFile("auto", 0.005, 0.1, true, true, true, true);
     //readFile("auto", detector, 0.005, 0.1, true, true);
 
+    //std::string exit = existanceFile("auto", "Original");
+    //std::cout << "exit" << std::endl;
 /*
     std::cout << "--" << pixel(detector, 125e-6) << " , " << yValueCor(detector, pixel(detector, 125e-6)) << std::endl;
     std::cout << "--" << pixel(detector, 140e-6) << " , " << yValueCor(detector, pixel(detector, 140e-6)) << std::endl;

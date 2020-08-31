@@ -60,7 +60,6 @@ struct fileHeader		//Struct for the file header
 };
 static_assert(sizeof(fileHeader) == 12*4);
 
-
 struct headerType		//Struct fot header of data			
 {
 	unsigned int checkWord : 32;
@@ -74,14 +73,37 @@ static_assert(sizeof(headerType) == 3*4);
 struct dataType			//Struct for data
 {
 	unsigned int checkWord : 32;
-	int time : 32; 				//Time passed from the start of the simulation fin ns	
+	int time1 : 32; 				//Time passed from the start of the simulation fin ns	
+	int time2 : 32; 				//Time passed from the start of the simulation fin ns
 	int plate : 32;				//Plate hitten -> counted from zero to two
 	int value : 32;				//Number of the pixel hit
 	
-	dataType(int t, int p, int v = 0) : checkWord{0xDADADADA}, time{t}, plate{p}, value{v} {}				//0xDADADADA = DATADATA
+	dataType(int64_t t, int p, int v = 0) : checkWord{0xDADADADA}, time1{int(t >> 32)}, time2{int(t)}, plate{p}, value{v} {}				//0xDADADADA = DATADATAù
+
+	int64_t time()		//Method to return the complite data value					
+	{
+		return (int64_t(time1) << 32) + time2;
+	}
 };
-static_assert(sizeof(dataType) == 4*4);
+static_assert(sizeof(dataType) == 4*5);
  
+struct outFileHeader		//Struct for the file header of the analised data file
+{
+	unsigned int checkWord : 32;
+	Rivelatore detector;		//Detector used
+	int take : 32;
+	int date1 : 32;		//the data value was divided into two parts to maintain 32 bits allignement in accordance with the rest of the program
+	int date2 : 32;
+
+	outFileHeader(Rivelatore det, int t, int64_t date) : checkWord{0xF0CADEAD}, detector{det}, take{t}, date1{int(date >> 32)}, date2{int(date)} {}
+
+	int64_t date()		//Method to return the complite data value					
+	{
+		return (int64_t(date1) << 32) + date2;
+	}
+};
+static_assert(sizeof(outFileHeader) == 12*4);
+
 struct outHeaderType
 {
 	unsigned int checkWord : 32;
@@ -102,16 +124,5 @@ struct outDataType
 	outDataType(int n, float m, float q) : checkWord{0x007DADAD}, eventNum{n}, mValue{m}, qValue{q} {} //0x007DADAD = 0xOUTDATAD
 };
 static_assert(sizeof(outDataType) == 4*4);
-
-
-/* 
-//Defining a vector that contains all the data type 
-inline std::vector<std::string> dataStuct{"fileHeader", "fileEnd", "headerType", "dataType"};
-inline std::map<int, int> structLenght{
-	{0xF0CAFACE, sizeof(fileHeader)},
-	{0x4EADE500, sizeof(headerType)},
-	{0XDADADADA, sizeof(dataType)}	
-};
-*/
 
 #endif

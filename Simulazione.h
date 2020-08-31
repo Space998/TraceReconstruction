@@ -53,7 +53,7 @@ auto time()
 }
 
 inline
-unsigned int duration(std::chrono::high_resolution_clock::time_point time1)
+int64_t duration(std::chrono::high_resolution_clock::time_point time1)
 {
    std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
    return std::chrono::duration_cast<std::chrono::nanoseconds>( time2 - time1 ).count();
@@ -64,6 +64,5 @@ int mBorders(Rivelatore &rivelatore, float y, float x, float (&array1)[2], float
 
 //Simulation functions
 int SimulatePoint(std::string filename, Rivelatore rivelatore, int num, const float y, const float x, const bool limit = true, const bool noise = false);		//Function to simulate the generation of num traces, all generated from a single point 
-//int SimulateLine(std::string filename, Rivelatore rivelatore, int num);
 
 #endif
