@@ -1,12 +1,10 @@
 #ifndef HF_H
 #define HF_H
 
-#include <iostream>
+#include "Rivelatore.h"
 #include <vector>
-#include <string>
-#include <algorithm>
-#include <math.h>
-#include <iterator>
+#include <cmath>
+#include <map>
 
 //Function for Hough trasformation
 inline
@@ -40,38 +38,16 @@ float radDeg(const float rad)   //Transforms radiand in degree
 }
 
 inline 
-float yValueCor(Rivelatore &detector, const int y) //Returns the float value of the hit on y axis (set in the middle of the pixel)
+float yValueCor(const Rivelatore &detector, const int y) //Returns the float value of the hit on y axis (set in the middle of the pixel)
 {
     return (y*detector.m_dimension) + (detector.m_dimension/2);
 }
  
-/*
 inline 
-std::vector<float> yValueCorAll(Rivelatore &detector, std::vector<int> &yValue) //Returns the float value of the hit on y axis (set in the middle of the pixel)
-{
-    std::vector<float> output;
-    for (int i = 0; i < int(yValue.size()); i++)
-        output.push_back(yValueCor(detector, yValue.at(i)));
-    return output;
-}
-*/
-
-inline 
-float xValueCor(Rivelatore &detector, const int x) //Returns the float value of the hit on x axis (position of the plate)
+float xValueCor(const Rivelatore &detector, const int x) //Returns the float value of the hit on x axis (position of the plate)
 {
     return -(x*detector.m_distance);
 }
-
-/*
-inline 
-std::vector<float> xValueCorAll(Rivelatore &detector, std::vector<int> &xValue) //Returns the float value of the hit on y axis (set in the middle of the pixel)
-{
-    std::vector<float> output;
-    for (int i = 0; i < int(xValue.size()); i++)
-        output.push_back(xValueCor(detector, xValue.at(i)));
-    return output;
-}
-*/
 
 inline
 float rho(const float y, const float x, const float theta)        //Cos function returns the cosine of an angle of x radians.
@@ -85,64 +61,19 @@ int rhoDiscrete(const float rho, const float rhoPrecision)
     return rho/rhoPrecision;
 }
 
-
 inline
-void rhoAll(std::vector<float> &yValueFloat, std::vector<float> &xValueFloat, std::vector<std::map<int,int>> &rhoValue, const float thetaPrecision, const float rhoPrecision)
+float mReconstructed(const float theta)
 {
-    for (int i = 0; i < int(rhoValue.size()); i++)
-    {
-        for (int j = 0; j < int(xValueFloat.size()); j++)
-        {
-            rhoValue.at(i)[rhoDiscrete(rho(yValueFloat.at(j),xValueFloat.at(j),(i+1)*thetaPrecision), rhoPrecision)] ++;
-            //std::cout << i << " - " << rhoDiscrete(rho(yValueFloat.at(j),xValueFloat.at(j),(i+1)*thetaPrecision), rhoPrecision) << ", " << rhoValue.at(i)[rhoDiscrete(rho(yValueFloat.at(j),xValueFloat.at(j),(i+1)*thetaPrecision), rhoPrecision)] << std::endl;
-        }
-    }
-}
-
-/*
-inline
-void rhoAll(std::vector<float> &yValueFloat, std::vector<float> &xValueFloat, std::vector<std::vector<int>> &rhovalueALL, const float thetaPrecision, const float rhoPrecision)
-{
-    for (int i = 0; i < int(rhovalueALL.size()); i++)
-    {
-        for (int j = 0; j < int(xValueFloat.size()); j++)
-        {
-            rhovalueALL.at(i).push_back(rhoDiscrete(rho(yValueFloat.at(j),xValueFloat.at(j),(i+1)*thetaPrecision), rhoPrecision));
-        }
-    }
-}
-
-inline
-void rhoOccurrency(std::vector<std::vector<int>> &rhovalueALL, std::vector<std::vector<int>> &rhovalue, std::vector<std::vector<int>> &rhovalueOccurrency)
-{
-    for (int i = 0; i < int(rhovalueALL.size()); i++)
-    {
-        std::sort(rhovalueALL.at(i).begin(), rhovalueALL.at(i).end());
-    }
-}
-*/
-
-/*
-inline
-void maxMap(std::map<int,int> &x)
-{
-    std::map<int,int>::iterator best = std::max_element(x.begin(),x.end(),[] (const std::pair<char,int>& a, const std::pair<char,int>& b)->bool{ return a.second < b.second; } );
-    std::cout << best->first << " , " << best->second << "\n";
-}
-*/
-
-inline
-float mReconstructed(const int theta, const float thetaPrecision)
-{
-    return -cos(degRad((float(theta+1))*thetaPrecision))/sin(degRad((float(theta+1))*thetaPrecision));
+    return -cos(degRad(theta))/sin(degRad(theta));
 }
 
 inline 
-float qReconstructed(const int theta, const int rho, const float thetaPrecision, const float rhoPrecision)
+float qReconstructed(const float theta, const float rho)
 {
-    return (rho*rhoPrecision)/sin(degRad((float(theta+1))*thetaPrecision));
+    return (rho)/sin(degRad(theta));
 }
 
+/*
 inline 
 float mean(std::vector<int64_t> &vec)
 {
@@ -151,5 +82,6 @@ float mean(std::vector<int64_t> &vec)
         sum += vec.at(i);
     return float(sum)/float(vec.size());
 }
+*/
 
 #endif

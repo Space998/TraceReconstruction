@@ -1,6 +1,8 @@
-1: Impossible to guarantee three hits (request in limit for simulation)
+1: Impossible to guarantee all hits (request in limit for simulation)
 2: Passed file already exists
 3: Unexpeted user response
 4: File not found
 5: Error reading data
 6: Passed incorrect file type
+7: Error in point passed by the user for the simulation
+666: Process killed by the user

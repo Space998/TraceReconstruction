@@ -4,13 +4,9 @@
 #include "DataType.h"
 #include "Rivelatore.h"
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <string>
-#include <algorithm>
 #include <filesystem>
-#include <typeinfo>
-#include <cmath>
 
 //Subdivide a path sting into path - name - extention
 inline
@@ -20,12 +16,8 @@ std::vector<std::string> SplitFilename (const std::string& str)
     size_t div;
     found=str.find_last_of("/\\");
     div=str.substr(found+1).find_first_of(".");
-    return std::vector<std::string>{str.substr(0,found), str.substr(found+1).substr(0,div), str.substr(found+1).substr(div+1)};   //std::vector<std::string>{path, name, extension}
-    /*
-    std::cout << " folder: " << str.substr(0,found) << std::endl;
-    std::cout << " filename: " << str.substr(found+1).substr(0,div) << std::endl;
-    std::cout << " .exe: " << str.substr(found+1).substr(div+1) << std::endl; 
-    */
+    return std::vector<std::string>{str.substr(0,found), str.substr(found+1).substr(0,div), str.substr(found+1).substr(div+1)};   
+    //std::vector<std::string>{path, name, extension}
 }
 
 //Count how many Simulation*.bin are in the directory
@@ -52,7 +44,7 @@ int howMany(std::string path = "Simulation", std::string name = "Simulation")
 //Determines the name for the file containing the original data
 //Checks for the existance of the name file passed by the user or determens the name for the new automatically generated file
 //Returns take number
-int checkWriteFile(std::string &filename, std::string &file2);
+unsigned int checkWriteFile(std::string &filename, std::string &file2);
 
 //Function that checks the existance of the file passed by the user to be read for data and in case of automatic naming return the correct file name
 std::string existanceFile(std::string namefile, std::string type);   //Function to determine the the existance of file namefile 
@@ -68,7 +60,7 @@ void write(std::ofstream &file, T data)
 
 template <typename H, typename T> 
 inline
-void writeData(std::ofstream &datafile, H header , std::vector<T> &values)
+void writeData(std::ofstream &datafile, H header ,const std::vector<T> &values)
 {
     write(datafile, header);
     for(auto const& el: values) 
@@ -76,14 +68,5 @@ void writeData(std::ofstream &datafile, H header , std::vector<T> &values)
         write(datafile, el);
     }
 }
-
-void checkCorrectness(std::string original, std::string analysis, std::vector<int64_t> times, const bool interactiveImg); //The last bool is used to determine if the function was called inside the read file function
-//void checkCorrectness(std::vector<float> &difference, std::vector<int> &count, std::vector<float> &value);
-
-//Function to read file
-void readFile(std::string namefile, const float rhoPrecision, const float thetaPrecision, const bool terminalOutput, const bool images, const bool interactiveImg, const bool check);
-//theta and rho precision indicates the dimension of a pixel in the (rho,theta) space for the discretization of the Hough space
-//theta precision is requested in degree -> the function will transform it in radiants
-//rho precision is in meters
 
 #endif

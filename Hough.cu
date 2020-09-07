@@ -1,25 +1,8 @@
 #include "Hough.h"
-#include <vector>
-#include <string>
-#include <iostream>
 #include "Rivelatore.h"
-#include <math.h>
+#include "Simulazione.h"
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/copy.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/transform.h>
-
-//Cuda cores: 384
-
-
-void VecToTrust(std::vector<float> &v)
-{
-  std::cout << "--Mucca" << std::endl;
-  thrust::device_vector<float> D(v.begin(), v.end());
-  print_vector("Test",D);
-}
+constexpr int thread = 1024;
 
 // sparse histogram using reduce_by_key
 template <typename Vector1,
@@ -31,14 +14,6 @@ void sparse_histogram(Vector1& data,
 {
   typedef typename Vector1::value_type ValueType; // input value type
   typedef typename Vector3::value_type IndexType; // histogram index type
-
-  /*
-  // copy input data (could be skipped if input is allowed to be modified)
-  thrust::device_vector<ValueType> data(input);
-    
-  // print the initial data
-  print_vector("initial data", data);
-  */
 
   // sort data to bring equal elements together
   thrust::sort(data.begin(), data.end());
@@ -68,78 +43,154 @@ void sparse_histogram(Vector1& data,
   //print_vector("histogram counts", histogram_counts);
 }
 
+__global__ void rho(float* ang, float* y, float *x, int* r, const float rhoPrecision, const int bigSize, const int smallSize)
+{
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  int idy = blockIdx.y * blockDim.y + threadIdx.y;
+  
+  if(idx < bigSize && idy < smallSize)
+  {
+    r[(idx*smallSize) + idy] = int(  ((cos(ang[idx]*M_PI/180)*x[idy]) + (sin(ang[idx]*M_PI/180)*y[idy]))    /rhoPrecision);
+  }
+}
 
-void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vector<int> &max, std::vector<float> &yValueFloat, std::vector<float> &xValueFloat, const float thetaPrecision, const float rhoPrecision, const float ymax, bool costrain)
+void Hough(std::vector<std::vector<std::vector<int>>> &values, std::vector<int> &max, std::vector<float> &yValueFloat, std::vector<float> &xValueFloat, const float thetaPrecision, const float rhoPrecision, const float ymax, bool costrain, const float limitAngle)
+{
+  float a[values.size()];
+  std::vector<int> r(xValueFloat.size()*values.size(),0);
+
+  //Fill a with angle values
+  for(int i = 0; i < sizeof(a)/sizeof(*a); i++)
+  {
+    a[i] = (i*thetaPrecision)+limitAngle;
+  }
+
+  float* dev_a = nullptr;  
+  float* dev_x = nullptr;
+  float* dev_y = nullptr;
+  int* dev_r = nullptr;
+  cudaMalloc((void**)&dev_a, sizeof(a)/sizeof(*a) * sizeof(float));
+  cudaMalloc((void**)&dev_x, xValueFloat.size() * sizeof(float));
+  cudaMalloc((void**)&dev_y, xValueFloat.size() * sizeof(float));
+  cudaMalloc((void**)&dev_r, xValueFloat.size() * values.size() * sizeof(float));
+  cudaMemcpy(dev_a, a, sizeof(a)/sizeof(*a) * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_x, &(xValueFloat[0]), xValueFloat.size() * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_y, &(yValueFloat[0]), xValueFloat.size() * sizeof(float), cudaMemcpyHostToDevice);
+
+  dim3 block(thread,1);
+  dim3 grid((int(values.size())/thread)+1,int(xValueFloat.size()));
+
+  rho<<<grid,block>>>(dev_a, dev_y, dev_x, dev_r, rhoPrecision, int(xValueFloat.size() * values.size()), int(xValueFloat.size()));
+
+  /* 
+  //Function to check cuda errors
+  cudaError_t kErr=cudaGetLastError();
+  if(kErr) // Se kErr==0, non ci sono errori
+      printf("Errore %s\n",cudaGetErrorString(kErr));
+  */
+
+  // Copy output vector from GPU buffer to host memory.
+  cudaMemcpy(&(r[0]), dev_r, xValueFloat.size() * values.size() * sizeof(int), cudaMemcpyDeviceToHost);
+
+  cudaDeviceSynchronize();
+  cudaFree(dev_a);
+  cudaFree(dev_x);
+  cudaFree(dev_y);
+  cudaFree(dev_r);
+
+  //std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now(); 
+  for(int i = 0; i < int(values.size()); i++)
+  {
+    thrust::device_vector<int> rhoVec(r.begin()+(i*int(xValueFloat.size())),r.begin()+(((i+1)*int(xValueFloat.size()))));
+
+    //Detector for histogram
+    thrust::device_vector<int> histogram_values;
+    thrust::device_vector<int> histogram_counts;
+
+    sparse_histogram(rhoVec, histogram_values, histogram_counts);
+
+    std::vector<int> histoValue(histogram_values.size());
+    thrust::copy(histogram_values.begin(), histogram_values.end(), histoValue.begin());
+    
+    std::vector<int> histoCount(histogram_values.size());
+    thrust::copy(histogram_counts.begin(), histogram_counts.end(), histoCount.begin());
+    
+    values.at(i).push_back(histoValue);
+    values.at(i).push_back(histoCount);
+
+    for (int j = 0; j < int(histogram_values.size()); j++)
+    {
+        //Calculate value for fit (angle, rho, significance)
+        if (histogram_counts[j] > max.at(2))
+        {
+            if (costrain)
+            {
+              float y0 = (((histogram_values[j]*rhoPrecision)+(rhoPrecision/2))/(sin(a[i]*M_PI/180)));
+              if (y0 > 0 && y0 <ymax)
+              {
+                  max.at(0) = i;
+                  max.at(1) = histogram_values[j];
+                  max.at(2) = histogram_counts[j];
+              }
+            }
+            else
+            {
+                max.at(0) = i;
+                max.at(1) = histogram_values[j];
+                max.at(2) = histogram_counts[j];
+            }
+        }
+
+        //Calculate max rho
+        if (histogram_values[j] > max.at(3))
+            max.at(3) = histogram_values[j];
+    }
+  }
+  //std::cout << duration(time1)*1e-6 << std::endl;
+}
+
+void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vector<int> &max, std::vector<float> &yValueFloat, std::vector<float> &xValueFloat, const float thetaPrecision, const float rhoPrecision, const float ymax, bool costrain, const float limitAngle)
 {
   thrust::device_vector<float> xValueFloatTrust(xValueFloat.begin(), xValueFloat.end());
   thrust::device_vector<float> yValueFloatTrust(yValueFloat.begin(), yValueFloat.end());
-
-  //thrust::device_vector<float> cosValue(xValueFloatTrust.size()); //Creatin of vector for cos value
-  //thrust::device_vector<float> sinValue(xValueFloatTrust.size()); //Creatin of vector for sin value
 
   //Termporari vectors to store x*cos and y*sin
   thrust::device_vector<float> xTemp(xValueFloatTrust.size());
   thrust::device_vector<float> yTemp(xValueFloatTrust.size());
 
-  //Vector temporary containin non dicreta values of rho
+  //Vector temporary containing non discreat values of rho
   thrust::device_vector<float> rhoTemp(xValueFloatTrust.size());
 
   //Vector containing fila rho discrete values
   thrust::device_vector<int> rho(xValueFloatTrust.size());
 
-  //Detector for histogram
-  thrust::device_vector<int> histogram_values;
-  thrust::device_vector<int> histogram_counts;
-
-  //Angle vector
-  //thrust::device_vector<float> angleVec(int(180/thetaPrecision)-1);
-  //thrust::sequence(angleVec.begin(), angleVec.end());
-  //thrust::transform(angleVec.begin(), angleVec.end(), angleVec.begin(), floatMultiplicationSum(thetaPrecision));
-
   float angle = 0;
+  float angleRad = 0;
 
   for (int i = 0; i < int(values.size()); i++)
   {
-    //std::cout << i+1 << std::endl;
-    /*
-    //Creatin of vector for cos value 
-    cosValue.clear();
-    thrust::fill(cosValue.begin(), cosValue.end(), cos(((i+1)*thetaPrecision*M_PI)/180));
-    */
-
-    angle = ((i+1)*thetaPrecision*M_PI)/180;
+  
+    angle =  (i*thetaPrecision)+limitAngle;
+    angleRad = (angle*M_PI)/180;
 
     //Calculation of cos(theta)*x
-    thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angle)));
-    //thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angle.begin())));
-    
-    //thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), cosValue.begin(), xTemp.begin(), thrust::multiplies<float>());
-
-    /*
-    //Creatin of vector for sin value
-    sinValue.clear();
-    //thrust::fill(sinValue.begin(), sinValue.end(), sin(((i+1)*thetaPrecision*M_PI)/180));
-    */
+    thrust::transform(xValueFloatTrust.begin(), xValueFloatTrust.end(), xTemp.begin(), floatMultiplication(cos(angleRad)));
 
     //Calculation of sin(theta)*y
-    thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), yTemp.begin(), floatMultiplication(sin(angle)));
-    //thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), sinValue.begin(), yTemp.begin(), thrust::multiplies<float>());
+    thrust::transform(yValueFloatTrust.begin(), yValueFloatTrust.end(), yTemp.begin(), floatMultiplication(sin(angleRad)));
 
     //Calulate sum
     thrust::transform(xTemp.begin(), xTemp.end(), yTemp.begin(), rhoTemp.begin(), thrust::plus<float>());
+    //print_vector("rho float", rhoTemp);
 
     //Calculate rho discrete
     thrust::transform(rhoTemp.begin(), rhoTemp.end(), rho.begin(), intDivision(rhoPrecision));
+    //print_vector("rho", rho);
 
-    /*
-    print_vector("X", xValueFloatTrust);
-    print_vector("COS", xTemp);
-    print_vector("Y",yValueFloatTrust);
-    print_vector("SIN",yTemp);
-    print_vector("RHO",rhoTemp);
-    print_vector("RHOD",rho);
-    */
-
+    //Detector for histogram
+    thrust::device_vector<int> histogram_values;
+    thrust::device_vector<int> histogram_counts;
+    
     sparse_histogram(rho, histogram_values, histogram_counts);
 
     std::vector<int> histoValue(histogram_values.size());
@@ -158,7 +209,7 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
         {
             if (costrain)
             {
-                float y0 = (histogram_values[j]*rhoPrecision)/(sin(((i+1)*thetaPrecision*M_PI)/180));
+                float y0 = (((histogram_values[j]*rhoPrecision)+(rhoPrecision/2))/(sin(angleRad)));
                 if (y0 > 0 && y0 <ymax)
                 {
                     max.at(0) = i;
@@ -178,6 +229,5 @@ void calculateRho(std::vector<std::vector<std::vector<int>>> &values, std::vecto
         if (histogram_values[j] > max.at(3))
             max.at(3) = histogram_values[j];
     }
-
   }
 }
